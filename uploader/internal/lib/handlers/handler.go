@@ -2,13 +2,16 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/minio/minio-go/v7"
+	"github.com/segmentio/kafka-go"
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 	"uploader/internal/lib/logger/handlers/sl"
 )
 
@@ -23,9 +26,19 @@ var allowedMimeTypes = map[string]string{
 	"audio/mp4":       ".mp3",
 }
 
-const maxUploadSize = 1 << 31 // 2 GB
+type KafkaInput struct {
+	FileName   string `json:"file_name"`
+	FileID     string `json:"file_id"`
+	FileType   string `json:"file_type"`
+	FileSize   int64  `json:"file_size"`
+	UploadedAt int64  `json:"uploaded_at"`
+	// UserID     string `json:"user_id"` TODO: implement auth
+	// Metadata map[string]string `json:"metadata,omitempty"`
+}
 
-func UploadHandler(ctx context.Context, log *slog.Logger, mc *minio.Client, bucket string) echo.HandlerFunc {
+const maxUploadSize = 1 << 30 // 1 GB
+
+func UploadHandler(ctx context.Context, log *slog.Logger, w *kafka.Writer, mc *minio.Client, bucket string) echo.HandlerFunc {
 	const op = "handlers.uploadHandler"
 	log = log.With(slog.String("op", op))
 	return func(c echo.Context) error {
@@ -72,6 +85,32 @@ func UploadHandler(ctx context.Context, log *slog.Logger, mc *minio.Client, buck
 			return c.String(http.StatusInternalServerError, "Failed to upload file.")
 		}
 		log.Info("Uploaded file", slog.String("file name", fileID), slog.Int64("weight in bytes", info.Size))
+
+		go func() {
+			out := KafkaInput{
+				FileName:   fileHeader.Filename,
+				FileID:     fileID,
+				FileType:   mtype.String(),
+				FileSize:   info.Size,
+				UploadedAt: time.Now().UTC().Unix(),
+			}
+
+			msgBytes, _ := json.Marshal(out)
+
+			msg := kafka.Message{
+				Key:   []byte(fileHeader.Filename),
+				Value: msgBytes,
+				Time:  time.Now().UTC(),
+			}
+
+			if err := w.WriteMessages(ctx, msg); err != nil {
+				// TODO: add some retry logic here
+				log.Error("failed to write message", sl.Err(err))
+			} else {
+				log.Info("message sent to Kafka", slog.String("file name", fileHeader.Filename), slog.Int64("weight in bytes", info.Size))
+			}
+		}()
+
 		return c.String(http.StatusOK, "uploaded successfully")
 	}
 

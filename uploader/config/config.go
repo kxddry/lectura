@@ -11,6 +11,7 @@ type Config struct {
 	Env     string  `yaml:"env" env-required:"true"`
 	Storage Storage `yaml:"storage" env-required:"true"`
 	Server  Server  `yaml:"server" env-required:"true"`
+	Kafka   Kafka   `yaml:"kafka" env-required:"true"`
 }
 type Storage struct {
 	Type            string `yaml:"type" env-required:"true"`
@@ -25,6 +26,14 @@ type Server struct {
 	Address     string        `yaml:"address" env-required:"true"`
 	Timeout     time.Duration `yaml:"timeout" env-required:"true"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-required:"true"`
+}
+
+type Kafka struct {
+	Brokers         []string `yaml:"brokers" env-required:"true"`
+	Topic           string   `yaml:"topic" env-required:"true"`
+	ClientID        string   `yaml:"client_id" env-required:"true"`
+	Retries         int      `yaml:"retries" env-default:"5"`
+	MaxMessageBytes int      `yaml:"max_message_bytes" env-default:"1048576"`
 }
 
 func MustLoad() *Config {
