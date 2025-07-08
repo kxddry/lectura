@@ -1,0 +1,14 @@
+env: local
+
+storage:
+  type: minio
+  endpoint: minio-server:9000
+  access_key_id: ROOTUSER
+  secret_access_key: CHANGEME123
+  ssl: false
+  bucket: videos
+
+server:
+  address: "0.0.0.0:8080"
+  timeout: 10s
+  idle_timeout: 120s
