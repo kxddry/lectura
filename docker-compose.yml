@@ -68,9 +68,23 @@ services:
       - ./uploader/config.yaml:/app/config.yaml
     command: ["./app"]
 
-  reader:
-    build: ./reader
+  whisper-api:
+    build: ./asr/model
+    depends_on:
+      - minio
+    environment:
+      - WHISPER_MODEL=base
+    expose:
+      - "8000:8000"
+    restart: on-failure
+
+  asr-orchestrator:
+    build: ./asr
     depends_on:
       - kafka
       - init-kafka
-    command: ["./app"]
+      - minio
+      - whisper-api
+    restart: on-failure
+    volumes:
+      - ./asr/config.yaml:/app/config.yaml
