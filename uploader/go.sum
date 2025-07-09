@@ -25,6 +25,10 @@ github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYW
 github.com/klauspost/cpuid/v2 v2.0.1/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
 github.com/klauspost/cpuid/v2 v2.2.10 h1:tBs3QSyvjDyFTq3uoc/9xFpCuOsJQFNPiAhYdw2skhE=
 github.com/klauspost/cpuid/v2 v2.2.10/go.mod h1:hqwkgyIinND0mEev00jJYCxPNVRVXFQeu1XKlok6oO0=
+github.com/kxddry/go-utils v1.0.0 h1:ftnNEeeF8tmBMMmamH0dL7oRn/wzQMhMuqzIMuB1bgw=
+github.com/kxddry/go-utils v1.0.0/go.mod h1:qe3u9d/78s72CENv+vXeyCNYmjI9Uu45hLXZZrAh4gk=
+github.com/kxddry/go-utils v1.0.1 h1:hKw7rCXRmd8QkSMVIzZzE8rpIOOn9DUR8CS2WF8zGW4=
+github.com/kxddry/go-utils v1.0.1/go.mod h1:qe3u9d/78s72CENv+vXeyCNYmjI9Uu45hLXZZrAh4gk=
 github.com/labstack/echo/v4 v4.13.4 h1:oTZZW+T3s9gAu5L8vmzihV7/lkXGZuITzTQkTEhcXEA=
 github.com/labstack/echo/v4 v4.13.4/go.mod h1:g63b33BZ5vZzcIUF8AtRH40DrTlXnx4UMC8rBdndmjQ=
 github.com/labstack/gommon v0.4.2 h1:F8qTUNXgG1+6WQmqoUWnz8WiEU60mXVVw0P4ht1WRA0=

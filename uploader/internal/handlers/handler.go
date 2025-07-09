@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/uuid"
+	"github.com/kxddry/go-utils/pkg/logger/handlers/sl"
 	"github.com/labstack/echo/v4"
 	"github.com/minio/minio-go/v7"
 	"github.com/segmentio/kafka-go"
@@ -12,7 +13,6 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
-	"uploader/internal/lib/logger/handlers/sl"
 )
 
 var allowedMimeTypes = map[string]string{

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/kxddry/go-utils/pkg/config"
+	"github.com/kxddry/go-utils/pkg/logger"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/minio/minio-go/v7"
@@ -10,21 +12,22 @@ import (
 	"log/slog"
 	"os"
 	"time"
-	"uploader/config"
-	"uploader/internal/lib/logger"
-
-	"uploader/internal/lib/handlers"
+	cc "uploader/config"
+	"uploader/internal/handlers"
 )
 
 func main() {
-	ctx := context.Background()
-	cfg := config.MustLoad()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var cfg cc.Config
+
+	config.MustParseConfig(&cfg)
 	if cfg.Storage.Type != "minio" {
 		panic("Invalid storage type. Currently supported: minio.")
 	}
 
 	log := logger.SetupLogger(cfg.Env)
-	mc, err := newMinioClient(cfg)
+	mc, err := newMinioClient(&cfg)
 
 	if err != nil {
 		log.Error(err.Error())
@@ -35,7 +38,7 @@ func main() {
 		log.Error(err.Error())
 		os.Exit(1)
 	}
-	w := newKafkaWriter(cfg)
+	w := newKafkaWriter(&cfg)
 	bucketName := cfg.Storage.BucketName
 
 	ensureBucketExists(ctx, log, mc, bucketName)
@@ -48,7 +51,7 @@ func main() {
 	e.Logger.Fatal(e.Start(cfg.Server.Address))
 }
 
-func newKafkaWriter(cfg *config.Config) *kafka.Writer {
+func newKafkaWriter(cfg *cc.Config) *kafka.Writer {
 	w := &kafka.Writer{
 		Addr:        kafka.TCP(cfg.Kafka.Brokers...),
 		Topic:       cfg.Kafka.Topic,
@@ -89,7 +92,7 @@ func ensureBucketExists(ctx context.Context, log *slog.Logger, mc *minio.Client,
 	}
 }
 
-func newMinioClient(cfg *config.Config) (*minio.Client, error) {
+func newMinioClient(cfg *cc.Config) (*minio.Client, error) {
 	return minio.New(
 		cfg.Storage.Endpoint, &minio.Options{
 			Creds: credentials.NewStaticV4(
