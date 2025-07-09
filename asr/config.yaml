@@ -1,0 +1,28 @@
+env: local
+
+storage:
+  type: minio
+  endpoint: minio:9000
+  access_key_id: ROOTUSER
+  secret_access_key: CHANGEME123
+  ssl: false
+  bucket: videos
+
+
+kafka:
+  brokers:
+    - kafka:9092
+  read:
+    topic: file.uploaded
+    group_id: tts
+    min_bytes: 1
+    max_bytes: 1048576
+    commit_interval: 5s
+    start_offset: latest
+
+  write:
+    topic: tts.done
+    client_id: tts-worker
+    retries: 5
+    max_message_bytes: 1048576
+    timeout: 5s

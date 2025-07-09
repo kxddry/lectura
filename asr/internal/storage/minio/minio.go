@@ -2,8 +2,8 @@ package minio
 
 import (
 	"context"
-	"github.com/kxddry/lectura/shared/entities/uploaded"
-	"github.com/kxddry/lectura/uploader/internal/config"
+	"github.com/kxddry/lectura/asr/internal/config"
+	"github.com/kxddry/lectura/asr/internal/storage"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
@@ -17,7 +17,7 @@ func (m *MinioClient) GetLink() string {
 	return m.url
 }
 
-func (m *MinioClient) Upload(ctx context.Context, fc uploaded.FileConfig) (url string, size int64, err error) {
+func (m *MinioClient) Upload(ctx context.Context, fc storage.FileConfig) (url string, size int64, err error) {
 	info, err := m.mclient.PutObject(ctx, fc.Bucket, fc.Filename, fc.File, fc.Size,
 		minio.PutObjectOptions{ContentType: fc.MType})
 	if err != nil {

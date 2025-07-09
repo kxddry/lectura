@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"github.com/kxddry/go-utils/pkg/config"
-	"github.com/kxddry/go-utils/pkg/logger"
-	"github.com/kxddry/go-utils/pkg/logger/handlers/sl"
+	"github.com/kxddry/lectura/shared/utils/config"
+	"github.com/kxddry/lectura/shared/utils/logger"
+	"github.com/kxddry/lectura/shared/utils/logger/handlers/sl"
+	"github.com/kxddry/lectura/uploader/internal/broker/kafka"
+	cc "github.com/kxddry/lectura/uploader/internal/config"
+	"github.com/kxddry/lectura/uploader/internal/handlers"
+	mini "github.com/kxddry/lectura/uploader/internal/storage/minio"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"os"
-	cc "uploader/config"
-	"uploader/internal/broker/kafka"
-	"uploader/internal/handlers"
-	mini "uploader/internal/storage/minio"
 )
 
 func main() {

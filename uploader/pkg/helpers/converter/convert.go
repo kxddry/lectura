@@ -3,16 +3,16 @@ package converter
 import (
 	"bytes"
 	"fmt"
+	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"io"
 	"os"
 	"os/exec"
-	"uploader/internal/storage"
 )
 
 // ConvertToWav converts a file to wav and returns a FileConfig.
 // Always defer closing the fc.File reader after calling the function
-func ConvertToWav(fc storage.FileConfig) (storage.FileConfig, error) {
-	fcc := storage.FileConfig{}
+func ConvertToWav(fc uploaded.FileConfig) (uploaded.FileConfig, error) {
+	fcc := uploaded.FileConfig{}
 	tmpInputPath := "/tmp/" + fc.Filename
 	tmpOutputPath := "/tmp/" + fc.FileID + ".wav"
 
@@ -36,7 +36,7 @@ func ConvertToWav(fc storage.FileConfig) (storage.FileConfig, error) {
 		return fcc, fmt.Errorf("%s: %w", "failed to open the converted file???", err)
 	}
 	info, _ := file.Stat()
-	fcc = storage.FileConfig{
+	fcc = uploaded.FileConfig{
 		Filename: fc.FileID + ".wav",
 		FileID:   fc.FileID,
 		File:     file,

@@ -1,0 +1,4 @@
+openai-whisper
+setuptools-rust
+fastapi
+pydantic

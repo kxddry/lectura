@@ -5,18 +5,17 @@ import (
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/uuid"
 	"github.com/kxddry/go-utils/pkg/logger/handlers/sl"
+	"github.com/kxddry/lectura/shared/entities/uploaded"
+	"github.com/kxddry/lectura/uploader/pkg/helpers/converter"
 	"github.com/labstack/echo/v4"
 	"io"
 	"log/slog"
 	"net/http"
 	"time"
-	"uploader/internal/broker"
-	"uploader/internal/storage"
-	"uploader/pkg/helpers/converter"
 )
 
 type KafkaWriter interface {
-	Write(context.Context, broker.BrokerRecord) error
+	Write(context.Context, uploaded.BrokerRecord) error
 }
 
 type Client interface {
@@ -28,7 +27,7 @@ type LinkGetter interface {
 	GetLink() string
 }
 type Uploader interface {
-	Upload(ctx context.Context, fc storage.FileConfig) (url string, size int64, err error)
+	Upload(ctx context.Context, fc uploaded.FileConfig) (url string, size int64, err error)
 }
 
 var allowedMimeTypes = map[string]string{
@@ -87,7 +86,7 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, up Clie
 		}
 
 		fileID := uuid.New().String()
-		fc := storage.FileConfig{
+		fc := uploaded.FileConfig{
 			Filename: fileID + ext,
 			FileID:   fileID,
 			File:     file,
@@ -124,7 +123,7 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, up Clie
 			log.Info("Uploaded converted .wav", slog.String("fileID", fileID))
 		}
 
-		out := broker.BrokerRecord{
+		out := uploaded.BrokerRecord{
 			FileName:   fileHeader.Filename,
 			FileID:     fc.FileID,
 			FileType:   fc.MType,
