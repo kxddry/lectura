@@ -6,8 +6,10 @@ storage:
   access_key_id: ROOTUSER
   secret_access_key: CHANGEME123
   ssl: false
-  bucket: videos
+  bucket_videos: videos
+  bucket_text: text
 
+whisper_api: whisper:5678
 
 kafka:
   brokers:

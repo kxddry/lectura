@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/kxddry/lectura/shared/entities/transcribed"
 	"io"
 )
 
@@ -15,7 +16,7 @@ type FileConfig struct {
 }
 
 type Storage interface {
-	Upload(ctx context.Context, fc FileConfig) (url string, size int64, err error)
+	Upload(ctx context.Context, tc transcribed.BrokerRecord) (url string, size int64, err error)
 	EnsureBucketExists(ctx context.Context, bucket string) error
 	GetLink() string
 }

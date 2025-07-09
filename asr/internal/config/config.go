@@ -3,17 +3,20 @@ package config
 import "time"
 
 type Config struct {
-	Env     string  `yaml:"env" env-required:"true"`
-	Storage Storage `yaml:"storage" env-required:"true"`
-	Kafka   Kafka   `yaml:"kafka" env-required:"true"`
+	Env        string  `yaml:"env" env-required:"true"`
+	WhisperAPI string  `yaml:"whisper_api" env-required:"true"`
+	Storage    Storage `yaml:"storage" env-required:"true"`
+	Kafka      Kafka   `yaml:"kafka" env-required:"true"`
 }
 type Storage struct {
-	Type            string `yaml:"type" env-required:"true"`
-	Endpoint        string `yaml:"endpoint" env-required:"true"`
-	AccessKeyID     string `yaml:"access_key_id" env-required:"true"`
-	SecretAccessKey string `yaml:"secret_access_key" env-required:"true"`
-	UseSSL          bool   `yaml:"ssl" env-default:"false"`
-	BucketName      string `yaml:"bucket" env-default:"videos"`
+	Type            string        `yaml:"type" env-required:"true"`
+	Endpoint        string        `yaml:"endpoint" env-required:"true"`
+	AccessKeyID     string        `yaml:"access_key_id" env-required:"true"`
+	SecretAccessKey string        `yaml:"secret_access_key" env-required:"true"`
+	UseSSL          bool          `yaml:"ssl" env-default:"false"`
+	BucketInput     string        `yaml:"bucket_input" env-default:"input"`
+	BucketText      string        `yaml:"bucket_text" env-default:"text"`
+	TTL             time.Duration `yaml:"ttl" env-default:"15m"` // for presigned urls
 }
 
 type Kafka struct {

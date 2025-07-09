@@ -2,6 +2,7 @@ package minio
 
 import (
 	"context"
+	"fmt"
 	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"github.com/kxddry/lectura/uploader/internal/config"
 	"github.com/minio/minio-go/v7"
@@ -23,7 +24,7 @@ func (m *MinioClient) Upload(ctx context.Context, fc uploaded.FileConfig) (url s
 	if err != nil {
 		return "", 0, err
 	}
-	return info.Location, info.Size, nil
+	return fmt.Sprintf("%s%s", m.url, info.Location), info.Size, nil
 }
 
 func (m *MinioClient) EnsureBucketExists(ctx context.Context, bucket string) error {

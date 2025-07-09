@@ -3,15 +3,19 @@ module github.com/kxddry/lectura/asr
 go 1.24.4
 
 require (
+	github.com/kxddry/lectura/shared v0.0.0-00010101000000-000000000000
 	github.com/minio/minio-go/v7 v7.0.94
 	github.com/segmentio/kafka-go v0.4.48
 )
 
 require (
+	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/ilyakaznacheev/cleanenv v1.5.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/minio/crc64nvme v1.0.1 // indirect
@@ -24,4 +28,8 @@ require (
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
 )
+
+replace github.com/kxddry/lectura/shared => ../shared
