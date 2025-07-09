@@ -20,3 +20,6 @@ kafka:
   client_id: uploader
   retries: 5
   max_message_bytes: 1048576
+  acks: all
+  compression: lz4
+  timeout: 5s

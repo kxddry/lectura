@@ -9,6 +9,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/compress"
 	"log/slog"
 	"os"
 	"time"
@@ -27,6 +28,8 @@ func main() {
 	}
 
 	log := logger.SetupLogger(cfg.Env)
+	log.Debug("debug enabled")
+
 	mc, err := newMinioClient(&cfg)
 
 	if err != nil {
@@ -52,15 +55,44 @@ func main() {
 }
 
 func newKafkaWriter(cfg *cc.Config) *kafka.Writer {
-	w := &kafka.Writer{
-		Addr:        kafka.TCP(cfg.Kafka.Brokers...),
-		Topic:       cfg.Kafka.Topic,
-		Balancer:    &kafka.RoundRobin{},
-		MaxAttempts: cfg.Kafka.Retries,
-		Async:       true,
-		Compression: kafka.Lz4,
+
+	var compression kafka.Compression
+	switch cfg.Kafka.Compression {
+	case "gzip":
+		compression = kafka.Gzip
+	case "snappy":
+		compression = kafka.Snappy
+	case "lz4":
+		compression = kafka.Lz4
+	case "zstd":
+		compression = kafka.Zstd
+	default:
+		compression = compress.None
 	}
-	return w
+
+	var requiredAcks kafka.RequiredAcks
+	switch cfg.Kafka.Acks {
+	case "0":
+		requiredAcks = kafka.RequireNone
+	case "1":
+		requiredAcks = kafka.RequireOne
+	case "all":
+		requiredAcks = kafka.RequireAll
+	default:
+		requiredAcks = kafka.RequireAll
+	}
+
+	return &kafka.Writer{
+		Addr:                   kafka.TCP(cfg.Kafka.Brokers...),
+		Topic:                  cfg.Kafka.Topic,
+		Balancer:               &kafka.RoundRobin{},
+		MaxAttempts:            cfg.Kafka.Retries,
+		RequiredAcks:           requiredAcks,
+		Async:                  true,
+		Compression:            compression,
+		WriteTimeout:           cfg.Kafka.Timeout,
+		AllowAutoTopicCreation: false,
+	}
 }
 
 func checkKafkaAlive(brokers []string) error {
