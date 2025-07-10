@@ -15,18 +15,22 @@ import (
 )
 
 func main() {
+	// configure context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	var cfg cc.Config
 
+	// parse config
+	var cfg cc.Config
 	config.MustParseConfig(&cfg)
 	if cfg.Storage.Type != "minio" {
 		panic("Invalid storage type. Currently supported: minio.")
 	}
 
+	// init logger
 	log := logger.SetupLogger(cfg.Env)
 	log.Debug("debug enabled")
 
+	// init S3 client
 	mc, err := mini.New(cfg.Storage)
 	if err != nil {
 		log.Error("Error creating minio client", sl.Err(err))
@@ -39,13 +43,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	// init kafka writer
 	if err = kafka.CheckAlive(cfg.Kafka.Brokers); err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
 	}
 	w := kafka.New(&cfg.Kafka)
 
+	// init router
 	e := echo.New()
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"POST"},
+		AllowHeaders:     []string{"*"},
+		AllowCredentials: true,
+	}))
 	e.Use(middleware.BodyLimit("1G"))
 
 	e.POST("/upload", handlers.UploadHandler(ctx, log, w, mc, bucket))

@@ -6,7 +6,6 @@ import (
 )
 
 type Storage interface {
-	Upload(ctx context.Context, fc uploaded.FileConfig) (url string, size int64, err error)
+	Upload(ctx context.Context, fc uploaded.FileConfig) error
 	EnsureBucketExists(ctx context.Context, bucket string) error
-	GetLink() string
 }

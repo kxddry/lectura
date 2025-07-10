@@ -1,23 +1,25 @@
 FROM golang:1.24 AS builder
 LABEL authors="iv"
 
-WORKDIR /app
-
-COPY uploader/ ./uploader
-COPY shared/ ./shared
+COPY shared/ /app/shared/
 
 WORKDIR /app/uploader
 
-RUN go mod tidy
+COPY uploader/go.* ./
+RUN go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/main
+COPY uploader/ ./
 
-FROM alpine:latest
 
-WORKDIR /app
+RUN go build -o app ./cmd/main
 
-COPY --from=builder /app/uploader/app .
+FROM debian:bookworm-slim
+LABEL authors="iv"
+
+RUN apt-get update && apt-get install -y ffmpeg
+
+COPY --from=builder /app/uploader/app /app/uploader/app
 
 ENV CONFIG_PATH=/app/config.yaml
 
-CMD ["./app"]
+CMD ["/app/uploader/app"]

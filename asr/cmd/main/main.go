@@ -88,7 +88,9 @@ func main() {
 			// orchestrate
 			select {
 			case msg := <-msgCh:
-				log.Debug("message sent to jobs", slog.String("filename", msg.FileName))
+				log.Debug("message sent to jobs", slog.String("file name", msg.FileName),
+					slog.String("file id", msg.FileID),
+					slog.String("file type", msg.FileType))
 				jobs <- msg
 			case err := <-errCh:
 				log.Error("kafka reader", sl.Err(err))

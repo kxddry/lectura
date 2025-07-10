@@ -14,7 +14,7 @@ type Storage struct {
 	AccessKeyID     string        `yaml:"access_key_id" env-required:"true"`
 	SecretAccessKey string        `yaml:"secret_access_key" env-required:"true"`
 	UseSSL          bool          `yaml:"ssl" env-default:"false"`
-	BucketInput     string        `yaml:"bucket_input" env-default:"input"`
+	BucketInput     string        `yaml:"bucket_input" env-default:"videos"`
 	BucketText      string        `yaml:"bucket_text" env-default:"text"`
 	TTL             time.Duration `yaml:"ttl" env-default:"15m"` // for presigned urls
 }

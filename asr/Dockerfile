@@ -1,23 +1,24 @@
 FROM golang:1.24 AS builder
 LABEL authors="iv"
 
-WORKDIR /app
-
-COPY asr/ ./asr
-COPY shared/ ./shared
+COPY shared/ /app/shared/
 
 WORKDIR /app/asr
 
-RUN go mod tidy
+COPY asr/go.* ./
+RUN go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/main
+COPY asr/ ./
 
-FROM alpine:latest
 
-WORKDIR /app
+RUN go build -o app ./cmd/main
 
-COPY --from=builder /app/asr/app .
+FROM debian:bookworm-slim
+LABEL authors="iv"
+
+
+COPY --from=builder /app/asr/app /app/asr/app
 
 ENV CONFIG_PATH=/app/config.yaml
 
-CMD ["./app"]
+CMD ["/app/asr/app"]

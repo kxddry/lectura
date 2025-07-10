@@ -12,39 +12,59 @@ import (
 // ConvertToWav converts a file to wav and returns a FileConfig.
 // Always defer closing the fc.File reader after calling the function
 func ConvertToWav(fc uploaded.FileConfig) (uploaded.FileConfig, error) {
-	fcc := uploaded.FileConfig{}
-	tmpInputPath := "/tmp/" + fc.Filename
+	// Prepare paths
+	tmpInputPath := "/tmp/" + fc.FileID + fc.Extension
 	tmpOutputPath := "/tmp/" + fc.FileID + ".wav"
 
-	out, err := os.Create(tmpInputPath)
-	defer os.Remove(tmpInputPath)
-	defer out.Close()
+	// Make sure we clean up both temp files
+	defer func() {
+		_ = os.Remove(tmpInputPath)
+		_ = os.Remove(tmpOutputPath)
+	}()
 
+	// Write incoming file to a temp
+	inFile, err := os.Create(tmpInputPath)
 	if err != nil {
-		return fcc, fmt.Errorf("%s: %w", "failed to create a temporary file", err)
+		return uploaded.FileConfig{},
+			fmt.Errorf("failed to create temp input file: %w", err)
 	}
-	if _, err = io.Copy(out, fc.File); err != nil {
-		return fcc, fmt.Errorf("%s: %w", "failed to fill the temp file up", err)
+	// Caller must close the original fc.File; we only close our temp writer
+	defer inFile.Close()
+
+	if _, err := io.Copy(inFile, fc.File); err != nil {
+		return uploaded.FileConfig{},
+			fmt.Errorf("failed to write to temp input file: %w", err)
 	}
 
-	if err = convertFileToWav(tmpInputPath, tmpOutputPath); err != nil {
-		return fcc, err
+	// Convert with ffmpeg
+	if err := convertFileToWav(tmpInputPath, tmpOutputPath); err != nil {
+		return uploaded.FileConfig{}, err
 	}
 
-	file, err := os.Open(tmpOutputPath)
+	// Open the converted wav
+	outFile, err := os.Open(tmpOutputPath)
 	if err != nil {
-		return fcc, fmt.Errorf("%s: %w", "failed to open the converted file???", err)
+		return uploaded.FileConfig{},
+			fmt.Errorf("failed to open converted wav: %w", err)
 	}
-	info, _ := file.Stat()
-	fcc = uploaded.FileConfig{
-		Filename: fc.FileID + ".wav",
-		FileID:   fc.FileID,
-		File:     file,
-		Size:     info.Size(),
-		Bucket:   fc.Bucket,
-		MType:    fc.MType,
+
+	info, err := outFile.Stat()
+	if err != nil {
+		_ = outFile.Close()
+		return uploaded.FileConfig{},
+			fmt.Errorf("failed to stat converted wav: %w", err)
 	}
-	return fc, nil
+
+	fcc := uploaded.FileConfig{
+		Extension: ".wav",
+		FileName:  fc.FileName,
+		FileID:    fc.FileID,
+		File:      outFile,
+		FileSize:  info.Size(),
+		Bucket:    fc.Bucket,
+		FileType:  "audio/wav",
+	}
+	return fcc, nil
 }
 
 func convertFileToWav(inputPath, outPath string) error {
@@ -58,7 +78,7 @@ func convertFileToWav(inputPath, outPath string) error {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("ffmpeg error: %v, details: %s", err, stderr.String())
+		return fmt.Errorf("ffmpeg error: %v", err)
 	}
 	return nil
 }

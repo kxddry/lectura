@@ -1,0 +1,36 @@
+FROM golang:1.24-bookworm AS builder
+LABEL authors="iv"
+
+# install delve for debugging
+ENV GOPATH=/go
+ENV PATH=$GOPATH/bin:$PATH
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+COPY shared/ /app/shared/
+
+WORKDIR /app/uploader
+
+COPY uploader/go.* ./
+RUN go mod download
+
+COPY uploader/ ./
+
+RUN go build -gcflags="all=-N -l" -o app ./cmd/main
+
+# ===== Stage 2: debug runtime =====
+FROM debian:bookworm-slim
+LABEL authors="iv"
+
+ENV PATH=/go/bin:$PATH
+
+RUN apt-get update && apt-get install -y ffmpeg
+
+COPY --from=builder /go/bin/dlv /go/bin/dlv
+
+
+COPY --from=builder /app/uploader/app /app/uploader/app
+
+EXPOSE 40000
+ENV CONFIG_PATH=/app/config.yaml
+
+CMD ["dlv", "exec", "/app/uploader/app", "--headless", "--listen=:40000","--api-version=2", "--accept-multiclient", "--log"]

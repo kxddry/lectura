@@ -1,19 +1,15 @@
 package transcribed
 
 type BrokerRecord struct {
-	ID       string  `json:"id"`
-	TextUrl  string  `json:"text_url"`
-	Duration float64 `json:"duration"`
-	Language string  `json:"language"`
-}
-
-type TranscribeRequest struct {
-	ID       string `json:"id"`
-	AudioURL string `json:"audio_url"`
+	// Extension is always .txt
+	TextName string `json:"text_name"`
+	TextID   string `json:"text_id"`
+	// FileType is always text/plain
+	TextSize int64  `json:"text_size"`
+	Language string `json:"language"`
 }
 
 type TranscribeResponse struct {
-	ID       string  `json:"id"`
 	Text     string  `json:"text"`
 	Duration float64 `json:"duration_sec"`
 	Language string  `json:"language"`

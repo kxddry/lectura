@@ -2,7 +2,6 @@ package broker
 
 import (
 	"context"
-	"errors"
 	"github.com/kxddry/lectura/shared/entities/uploaded"
 )
 
@@ -18,7 +17,3 @@ type Writer interface {
 	Write(context.Context, uploaded.BrokerRecord) error
 	Broker
 }
-
-var (
-	ErrUninitializedBroker = errors.New("broker not initialized")
-)

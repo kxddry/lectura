@@ -1,29 +1,27 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/kxddry/lectura/asr/internal/config"
+	"github.com/kxddry/lectura/asr/internal/whisper"
 	"github.com/kxddry/lectura/shared/entities/transcribed"
 	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"io"
-	"net/http"
-	"time"
+	"strings"
 )
 
-type Uploader interface {
-	UploadText(ctx context.Context, id string, text string) (string, error)
-}
-
-type URLPresigner interface {
-	PresignedGetURL(ctx context.Context, bucket, object string, expiry time.Duration) (string, error)
-}
-
-type URLUploader interface {
+type Client interface {
 	Uploader
-	URLPresigner
+	Downloader
+}
+
+type Uploader interface {
+	Upload(ctx context.Context, fc uploaded.FileConfig) error
+}
+
+type Downloader interface {
+	Download(ctx context.Context, fc uploaded.FileConfig) (io.ReadCloser, error)
 }
 
 type Writer interface {
@@ -37,55 +35,40 @@ type KafkaPipeline struct {
 	W Writer
 }
 
-func callWhisperAPI(apiUrl string, tr transcribed.TranscribeRequest) (*transcribed.TranscribeResponse, error) {
-	reqBody, _ := json.Marshal(tr)
-	resp, err := http.Post(apiUrl, "application/json", bytes.NewReader(reqBody))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+func Pipeline(ctx context.Context, cfg *config.Config, c Client, kp KafkaPipeline, msg uploaded.BrokerRecord) error {
+	file, err := c.Download(ctx, uploaded.FileConfig{
+		Extension: msg.Extension,
+		FileName:  msg.FileName,
+		FileID:    msg.FileID,
+		File:      nil,
+		FileSize:  0,
+		Bucket:    cfg.Storage.BucketInput,
+		FileType:  msg.FileType,
+	})
 
-	body, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, err
-	}
-
-	var respObj transcribed.TranscribeResponse
-
-	err = json.Unmarshal(body, &respObj)
-	if err != nil {
-		return nil, err
-	}
-
-	return &respObj, nil
-}
-
-func Pipeline(ctx context.Context, cfg *config.Config, up URLUploader, kp KafkaPipeline, msg uploaded.BrokerRecord) error {
-	objectKey := msg.FileName
-	signedURL, err := up.PresignedGetURL(ctx, cfg.Storage.BucketInput, objectKey, cfg.Storage.TTL)
-	if err != nil {
-		return fmt.Errorf("presign url: %w", err)
-	}
-
-	tr := transcribed.TranscribeRequest{
-		ID:       msg.FileID,
-		AudioURL: signedURL,
-	}
-
-	resp, err := callWhisperAPI(cfg.WhisperAPI, tr)
+	resp, err := whisper.CallWhisperAPI(cfg.WhisperAPI, file)
 	if err != nil {
 		return fmt.Errorf("callWhisperAPI: %w", err)
 	}
 
-	URL, err := up.UploadText(ctx, resp.ID, resp.Text)
+	err = c.Upload(ctx, uploaded.FileConfig{
+		Extension: ".txt",
+		FileName:  msg.FileName,
+		FileID:    msg.FileID,
+		File:      io.NopCloser(strings.NewReader(resp.Text)),
+		FileSize:  int64(len(resp.Text)),
+		Bucket:    cfg.Storage.BucketText,
+		FileType:  "text/plain",
+	})
+
 	if err != nil {
 		return fmt.Errorf("upload text: %w", err)
 	}
+
 	rec := transcribed.BrokerRecord{
-		ID:       resp.ID,
-		TextUrl:  URL,
-		Duration: resp.Duration,
+		TextName: msg.FileName,
+		TextID:   msg.FileID,
+		TextSize: int64(len(resp.Text)),
 		Language: resp.Language,
 	}
 

@@ -2,7 +2,6 @@ package minio
 
 import (
 	"context"
-	"fmt"
 	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"github.com/kxddry/lectura/uploader/internal/config"
 	"github.com/minio/minio-go/v7"
@@ -11,20 +10,12 @@ import (
 
 type MinioClient struct {
 	mclient *minio.Client
-	url     string
 }
 
-func (m *MinioClient) GetLink() string {
-	return m.url
-}
-
-func (m *MinioClient) Upload(ctx context.Context, fc uploaded.FileConfig) (url string, size int64, err error) {
-	info, err := m.mclient.PutObject(ctx, fc.Bucket, fc.Filename, fc.File, fc.Size,
-		minio.PutObjectOptions{ContentType: fc.MType})
-	if err != nil {
-		return "", 0, err
-	}
-	return fmt.Sprintf("%s%s", m.url, info.Location), info.Size, nil
+func (m *MinioClient) Upload(ctx context.Context, fc uploaded.FileConfig) error {
+	_, err := m.mclient.PutObject(ctx, fc.Bucket, fc.FileID+fc.Extension, fc.File, fc.FileSize,
+		minio.PutObjectOptions{ContentType: fc.FileType})
+	return err
 }
 
 func (m *MinioClient) EnsureBucketExists(ctx context.Context, bucket string) error {
@@ -47,8 +38,5 @@ func New(cfg config.Storage) (*MinioClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &MinioClient{
-		mclient: mclient,
-		url:     mclient.EndpointURL().String(),
-	}, nil
+	return &MinioClient{mclient}, nil
 }
