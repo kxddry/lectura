@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, Form, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 import whisper
 import tempfile
@@ -9,26 +9,24 @@ model = whisper.load_model(os.getenv("WHISPER_MODEL", "turbo"))
 
 class TranscribeResponse(BaseModel):
     text: str
-    duration_sec: float
     language: str
 
 @app.post("/", response_model=TranscribeResponse)
 
-async def transcribe(id: str = Form(...), file: UploadFile = File(...)):
-    if not file.content_type.startswith("audio/"):
-        raise HTTPException(status_code=400, detail="Not an audio file")
-
+def transcribe(file: UploadFile = File(...)):
     suffix = os.path.splitext(file.filename)[1] or ".wav"
+    print(f"Transcribing {file.filename} to {suffix}")
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
-        contents = await file.read()
+        print(f"Writing to temporary file {tmp.name}")
+        contents = file.file.read()
         tmp.write(contents)
         tmp.flush()
-
+        print(f"model transcribes {tmp.name}")
         result = model.transcribe(tmp.name)
+        print(f"Transcription result: {result}")
 
     return TranscribeResponse(
         text=result["text"],
-        duration_sec=result["duration"],
         language=result["language"],
     )
 

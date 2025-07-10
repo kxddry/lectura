@@ -37,17 +37,20 @@ type KafkaPipeline struct {
 
 func Pipeline(ctx context.Context, cfg *config.Config, c Client, kp KafkaPipeline, msg uploaded.BrokerRecord) error {
 	file, err := c.Download(ctx, uploaded.FileConfig{
-		Extension: msg.Extension,
+		Extension: ".wav",
 		FileName:  msg.FileName,
 		FileID:    msg.FileID,
 		File:      nil,
 		FileSize:  0,
 		Bucket:    cfg.Storage.BucketInput,
-		FileType:  msg.FileType,
+		FileType:  "audio/wav",
 	})
+	if err != nil {
+		return err
+	}
 
 	resp, err := whisper.CallWhisperAPI(cfg.WhisperAPI, file)
-	if err != nil {
+	if err != nil || resp.Text == "" {
 		return fmt.Errorf("callWhisperAPI: %w", err)
 	}
 

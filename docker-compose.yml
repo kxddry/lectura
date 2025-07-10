@@ -78,7 +78,6 @@ services:
       - "8080:8080"
     volumes:
       - ./uploader/config.yaml:/app/config.yaml
-    command: ["./uploader/app"]
 
   whisper-api:
     build: ./asr/model

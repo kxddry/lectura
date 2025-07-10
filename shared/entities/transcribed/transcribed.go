@@ -10,7 +10,6 @@ type BrokerRecord struct {
 }
 
 type TranscribeResponse struct {
-	Text     string  `json:"text"`
-	Duration float64 `json:"duration_sec"`
-	Language string  `json:"language"`
+	Text     string `json:"text"`
+	Language string `json:"language"`
 }
