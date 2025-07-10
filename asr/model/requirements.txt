@@ -2,6 +2,5 @@ openai-whisper
 setuptools-rust
 fastapi
 pydantic
-requests
 uvicorn
 python-multipart
