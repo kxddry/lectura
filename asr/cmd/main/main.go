@@ -10,6 +10,7 @@ import (
 	"github.com/kxddry/lectura/shared/utils/config"
 	"github.com/kxddry/lectura/shared/utils/logger"
 	"github.com/kxddry/lectura/shared/utils/logger/handlers/sl"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -44,6 +45,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	log.Debug("minio client created")
+
 	// kafka
 	if err = kafka.CheckAlive(cfg.Kafka.Brokers); err != nil {
 		log.Error(err.Error())
@@ -57,6 +60,7 @@ func main() {
 	kp := handlers.KafkaPipeline{
 		msgCh, errCh, kafka.NewWriter(&cfg.Kafka),
 	}
+	log.Debug("kafka clients created")
 
 	// create a worker pool
 
@@ -67,26 +71,36 @@ func main() {
 			// process incoming jobs
 			for msg := range jobs {
 				err := handlers.Pipeline(ctx, &cfg, mc, kp, msg)
+
+				if err != nil {
+					log.Error("error processing job", sl.Err(err))
+				} else {
+					log.Debug("job processed successfully")
+				}
 				results <- err
 			}
 		}(i)
 	}
+	log.Debug("worker pool created")
 
 	go func() {
 		for {
 			// orchestrate
 			select {
 			case msg := <-msgCh:
+				log.Debug("message sent to jobs", slog.String("filename", msg.FileName))
 				jobs <- msg
 			case err := <-errCh:
 				log.Error("kafka reader", sl.Err(err))
 				return
 			case <-ctx.Done():
+				log.Debug("orchestrator shutting down, ctx done")
 				close(jobs)
 				return
 			}
 		}
 	}()
+	log.Debug("orchestrator started")
 
 	go func() {
 		// process errors
@@ -101,5 +115,5 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
-
+	log.Info("signal received, shutting down gracefully")
 }

@@ -8,7 +8,7 @@ COPY shared/ ./shared
 
 WORKDIR /app/uploader
 
-RUN go mod download
+RUN go mod tidy
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/main
 
