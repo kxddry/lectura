@@ -114,19 +114,6 @@ services:
       - uploader
     restart: unless-stopped
 
-  inkbot:
-    build: summarizer/inkbot-server
-    ports:
-      - "8100:8100"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities:
-                - gpu
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-    runtime: nvidia
 
 
 volumes:
