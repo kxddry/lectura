@@ -84,7 +84,7 @@ services:
     depends_on:
       - minio
     environment:
-      - WHISPER_MODEL=base
+      - WHISPER_MODEL=turbo
     expose:
       - "5678:5678"
     ports:

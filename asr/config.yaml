@@ -9,7 +9,7 @@ storage:
   bucket_input: videos
   bucket_text: text
 
-whisper_api: http://whisper-api:5678/
+whisper_api: http://host.docker.internal:5678/
 
 kafka:
   brokers:
