@@ -34,8 +34,7 @@ go.work.sum
 .gitignore
 .git/
 
-minio/*
-minio/.*
+/minio/
 
-uploader/.*
-kafka/
+/uploader/.examples/
+/kafka/
