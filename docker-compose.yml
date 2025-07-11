@@ -3,7 +3,7 @@ services:
     image: quay.io/minio/minio
     expose:
       - "9000:9000"
-    ports:
+    ports: # ports open for debugging
       - "9000:9000"
       - "9001:9001"
     environment:
@@ -17,7 +17,7 @@ services:
     image: apache/kafka:latest
     hostname: kafka
     container_name: kafka
-    expose:
+    expose:  # ports open for debugging
       - "9092:9092"
       - "9093:9093"
     ports:
@@ -60,7 +60,8 @@ services:
 
       echo -e 'Creating kafka topics'
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic file.uploaded --replication-factor 1 --partitions 1
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic tts.done --replication-factor 1 --partitions 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic asr.done --replication-factor 1 --partitions 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic sum.done --replication-factor 1 --partitions 1
 
       echo -e 'Following topics available:'
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
@@ -75,7 +76,7 @@ services:
       - init-kafka
       - kafka
     ports:
-      - "8080:8080"
+      - "8080:8080"  # ports open for debugging
     volumes:
       - ./uploader/config.yaml:/app/config.yaml
 
@@ -88,7 +89,7 @@ services:
     expose:
       - "5678:5678"
     ports:
-      - "5678:5678"
+      - "5678:5678"  # ports open for debugging
     volumes:
       - whisper-cache:/root/.cache/whisper
     restart: on-failure
@@ -106,6 +107,20 @@ services:
     volumes:
       - ./asr/config.yaml:/app/config.yaml
 
+  summarizer:
+    build:
+      context: .
+      dockerfile: summarizer/Dockerfile
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - kafka
+      - init-kafka
+      - minio
+    restart: unless-stopped
+    volumes:
+      - ./summarizer/config.yaml:/app/config.yaml
+
   frontend:
     build: ./frontend
     ports:
@@ -113,6 +128,7 @@ services:
     depends_on:
       - uploader
     restart: unless-stopped
+
 
 
 

@@ -2,35 +2,37 @@ package main
 
 import (
 	"context"
-	"github.com/kxddry/lectura/asr/internal/broker/kafka"
-	cc "github.com/kxddry/lectura/asr/internal/config"
-	"github.com/kxddry/lectura/asr/internal/handlers"
-	"github.com/kxddry/lectura/asr/internal/storage/minio"
-	"github.com/kxddry/lectura/shared/entities/uploaded"
+	"github.com/kxddry/lectura/shared/entities/transcribed"
 	"github.com/kxddry/lectura/shared/utils/config"
 	"github.com/kxddry/lectura/shared/utils/logger"
 	"github.com/kxddry/lectura/shared/utils/logger/handlers/sl"
+	"github.com/kxddry/lectura/summarizer/internal/broker/kafka"
+	config2 "github.com/kxddry/lectura/summarizer/internal/config"
+	"github.com/kxddry/lectura/summarizer/internal/handlers"
+	"github.com/kxddry/lectura/summarizer/internal/llm"
+	"github.com/kxddry/lectura/summarizer/internal/storage/minio"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-const workerPoolSize = 10
+const workerPoolSize = 100
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// config
-	var cfg cc.Config
+	var cfg config2.Config
 	config.MustParseConfig(&cfg)
 
-	// logger
 	log := logger.SetupLogger(cfg.Env)
 	log.Debug("debug enabled")
 
-	// S3 client
+	if cfg.Summarizer.ApiKey == "" {
+		log.Warn("API key is empty!")
+	}
+
 	mc, err := minio.New(cfg.Storage)
 	if err != nil {
 		log.Error("Error creating minio client", sl.Err(err))
@@ -40,19 +42,17 @@ func main() {
 		log.Error("Failed to ensure bucket for input exists", sl.Err(err))
 		os.Exit(1)
 	}
-	if err = mc.EnsureBucketExists(ctx, cfg.Storage.BucketText); err != nil {
-		log.Error("Failed to ensure bucket for text exists", sl.Err(err))
+	if err = mc.EnsureBucketExists(ctx, cfg.Storage.BucketOutput); err != nil {
+		log.Error("Failed to ensure bucket for output exists", sl.Err(err))
 		os.Exit(1)
 	}
 
 	log.Debug("minio client created")
 
-	// kafka
 	if err = kafka.CheckAlive(cfg.Kafka.Brokers); err != nil {
 		log.Error("CheckAlive failed", sl.Err(err))
 		os.Exit(1)
 	}
-
 	// read uploaded files
 	r := kafka.NewReader(&cfg.Kafka)
 	msgCh, errCh := r.Messages(ctx)
@@ -64,7 +64,7 @@ func main() {
 
 	// create a worker pool
 
-	jobs := make(chan uploaded.BrokerRecord, 100)
+	jobs := make(chan transcribed.BrokerRecord, 100)
 	results := make(chan error, 100)
 
 	for i := 0; i < workerPoolSize; i++ {
@@ -72,7 +72,7 @@ func main() {
 		// workers handling jobs
 		go func(id int) {
 			for msg := range jobs {
-				err := handlers.Pipeline(ctx, &cfg, mc, kp, msg)
+				err := handlers.Pipeline(ctx, &cfg, llm.OpenAI{&cfg}, mc, kp, msg)
 
 				if err != nil {
 					log.Error("error processing job", sl.Err(err))
@@ -97,22 +97,20 @@ func main() {
 	log.Info("signal received, shutting down gracefully")
 }
 
-func distributeJobs(ctx context.Context, log *slog.Logger, kp handlers.KafkaPipeline, jobs chan<- uploaded.BrokerRecord) {
+func distributeJobs(ctx context.Context, log *slog.Logger, kp handlers.KafkaPipeline, jobs chan<- transcribed.BrokerRecord) {
 	msgCh := kp.InputCh
 	errCh := kp.ErrCh
 	for {
 		// orchestrate
 		select {
 		case msg := <-msgCh:
-			log.Debug("message sent to jobs", slog.String("file name", msg.FileName),
-				slog.String("file id", msg.FileID),
-				slog.String("file type", msg.FileType))
+			log.Debug("message sent to jobs", slog.String("msg", msg.TextID))
 			jobs <- msg
 		case err := <-errCh:
 			log.Error("kafka reader", sl.Err(err))
 			return
 		case <-ctx.Done():
-			log.Debug("orchestrator shutting down, ctx done")
+			log.Debug("distributor shutting down, ctx done")
 			close(jobs)
 			return
 		}
