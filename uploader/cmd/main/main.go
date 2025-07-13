@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"github.com/kxddry/lectura/shared/entities/uploaded"
+	"github.com/kxddry/lectura/shared/utils/broker/kafka"
 	"github.com/kxddry/lectura/shared/utils/config"
 	"github.com/kxddry/lectura/shared/utils/logger"
 	"github.com/kxddry/lectura/shared/utils/logger/handlers/sl"
 	middleware2 "github.com/kxddry/lectura/shared/utils/middleware"
-	"github.com/kxddry/lectura/uploader/internal/broker/kafka"
+	"github.com/kxddry/lectura/shared/utils/s3"
 	cc "github.com/kxddry/lectura/uploader/internal/config"
 	"github.com/kxddry/lectura/uploader/internal/handlers"
-	mini "github.com/kxddry/lectura/uploader/internal/storage/minio"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"os"
@@ -23,9 +24,6 @@ func main() {
 	// parse config
 	var cfg cc.Config
 	config.MustParseConfig(&cfg)
-	if cfg.S3Storage.Type != "minio" {
-		panic("Invalid storage type. Currently supported: minio.")
-	}
 
 	secret := []byte(cfg.AppSecret)
 
@@ -34,24 +32,19 @@ func main() {
 	log.Debug("debug enabled")
 
 	// init S3 client
-	mc, err := mini.New(cfg.S3Storage)
+	s3Client, err := s3.NewClient(cfg.S3Storage)
 	if err != nil {
 		log.Error("Error creating minio client", sl.Err(err))
 		os.Exit(1)
 	}
 
-	err = mini.EnsureBucketExists(mc, ctx, cfg.S3Storage.BucketName)
-	if err != nil {
+	if err = s3Client.EnsureBucketExists(ctx, cfg.S3Storage.BucketName); err != nil {
 		log.Error("Failed to ensure bucket exists", sl.Err(err))
 		os.Exit(1)
 	}
 
 	// init kafka writer
-	if err = kafka.CheckAlive(cfg.Kafka.Brokers); err != nil {
-		log.Error(err.Error())
-		os.Exit(1)
-	}
-	w := kafka.New(&cfg.Kafka)
+	w := kafka.NewWriter[uploaded.KafkaRecord](cfg.Kafka)
 
 	// init router
 	e := echo.New()
@@ -67,7 +60,7 @@ func main() {
 	e.Use(middleware.BodyLimit("1G"))
 	e.Use(middleware2.JWTFromCookie(secret))
 
-	e.POST("/api/upload", handlers.UploadHandler(ctx, log, w, mc, cfg))
+	e.POST("/api/upload", handlers.UploadHandler(ctx, log, w, s3Client, cfg))
 	log.Info("Server started at " + cfg.Server.Address)
 	e.Logger.Fatal(e.Start(cfg.Server.Address))
 }

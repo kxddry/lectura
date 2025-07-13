@@ -3,38 +3,42 @@ package kafka
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/kxddry/lectura/shared/entities/uploaded"
-	"github.com/kxddry/lectura/uploader/internal/config"
+	kafka2 "github.com/kxddry/lectura/shared/entities/config/kafka"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/compress"
 	"time"
 )
 
-type Writer struct {
+/*
+Documentation
+
+type Writer[T any] interface {
+	Write(T) error
+}
+
+type Reader[T any] interface {
+	Messages(context.Context) (<-chan T, <-chan error)
+}
+*/
+
+type Writer[T any] struct {
 	w *kafka.Writer
 }
 
-func CheckAlive(brokers []string) error {
-	if len(brokers) == 0 {
-		return fmt.Errorf("empty list of brokers")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-	defer cancel()
-
-	conn, err := kafka.DialContext(ctx, "tcp", brokers[0])
+func (w Writer[T]) Write(ctx context.Context, record T) error {
+	msgBytes, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-
-	_, err = conn.Controller()
-	return err
+	msg := kafka.Message{
+		Value: msgBytes,
+	}
+	return w.w.WriteMessages(ctx, msg)
 }
 
-func New(cfg *config.Kafka) Writer {
+func NewWriter[T any](cfg kafka2.WriterConfig) Writer[T] {
 	var compression kafka.Compression
+
 	switch cfg.Compression {
 	case "gzip":
 		compression = kafka.Gzip
@@ -71,15 +75,18 @@ func New(cfg *config.Kafka) Writer {
 		WriteTimeout:           cfg.Timeout,
 		AllowAutoTopicCreation: false,
 	}
-	return Writer{w}
+	return Writer[T]{w: w}
 }
 
-func (w Writer) Write(ctx context.Context, record uploaded.KafkaRecord) error {
-	msgBytes, _ := json.Marshal(record)
+func (w Writer[T]) CheckAlive(brokers []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
 
-	msg := kafka.Message{
-		Value: msgBytes,
+	conn, err := kafka.DialContext(ctx, "tcp", brokers[0])
+	if err != nil {
+		return err
 	}
-
-	return w.w.WriteMessages(ctx, msg)
+	defer conn.Close()
+	_, err = conn.Controller()
+	return err
 }

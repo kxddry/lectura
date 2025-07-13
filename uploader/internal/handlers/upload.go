@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kxddry/go-utils/pkg/logger/handlers/sl"
 	"github.com/kxddry/lectura/shared/entities/uploaded"
+	"github.com/kxddry/lectura/shared/utils/s3"
 	"github.com/kxddry/lectura/uploader/internal/config"
 	"github.com/kxddry/lectura/uploader/internal/entities"
 	"github.com/kxddry/lectura/uploader/pkg/helpers/converter"
@@ -27,7 +28,7 @@ type Client interface {
 }
 
 type Uploader interface {
-	Upload(ctx context.Context, file entities.File, bucket string) error
+	Upload(ctx context.Context, bucket string, file s3.File) error
 }
 
 var allowedMimeTypes = map[string]string{
@@ -98,13 +99,7 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 		withoutExt := filename[:len(filename)-len(filepath.Ext(filename))]
 		// generated UUIDv4 file name for storage
 		fileID := uuid.New().String()
-		fc := entities.File{
-			UUID:      fileID,
-			Extension: ext,
-			Data:      file,
-			Size:      fileHeader.Size,
-			Type:      mtype.String(),
-		}
+		fc := entities.New(fileID, ext, file, fileHeader.Size, mtype.String())
 
 		var wavSent bool
 
@@ -116,9 +111,9 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 				log.Error("failed to convert file", sl.Err(err))
 				return c.String(http.StatusBadRequest, "failed to convert file, your file is broken: "+err.Error())
 			}
-			defer wavFC.Data.Close()
+			defer wavFC.Close()
 
-			err = cli.Upload(ctx, wavFC, cfg.S3Storage.BucketName)
+			err = cli.Upload(ctx, cfg.S3Storage.BucketName, wavFC)
 
 			if err != nil {
 				log.Error("failed to upload converted wav file", sl.Err(err))
@@ -134,7 +129,7 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 		}
 
 		if !wavSent {
-			err = cli.Upload(ctx, fc, cfg.S3Storage.BucketName)
+			err = cli.Upload(ctx, cfg.S3Storage.BucketName, fc)
 			if err != nil {
 				log.Error("failed to upload original file", sl.Err(err))
 				return c.String(http.StatusInternalServerError, "Failed to upload file: "+err.Error())
