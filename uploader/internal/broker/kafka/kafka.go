@@ -74,48 +74,7 @@ func New(cfg *config.Kafka) Writer {
 	return Writer{w}
 }
 
-func (w Writer) Messages(ctx context.Context) (chan<- uploaded.BrokerRecord, <-chan error) {
-	msgCh := make(chan uploaded.BrokerRecord)
-	errCh := make(chan error, 1)
-
-	go func() {
-		defer close(msgCh)
-		defer close(errCh)
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case record, ok := <-msgCh:
-				if !ok {
-					return
-				}
-				msgBytes, err := json.Marshal(record)
-				if err != nil {
-					select {
-					case errCh <- fmt.Errorf("marshal error: %w", err):
-					default:
-					}
-					continue
-				}
-
-				msg := kafka.Message{Value: msgBytes}
-				err = w.w.WriteMessages(ctx, msg)
-				if err != nil {
-					select {
-					case errCh <- fmt.Errorf("write error: %w", err):
-					default:
-					}
-					return
-				}
-			}
-		}
-	}()
-
-	return msgCh, errCh
-}
-
-func (w Writer) Write(ctx context.Context, record uploaded.BrokerRecord) error {
+func (w Writer) Write(ctx context.Context, record uploaded.KafkaRecord) error {
 	msgBytes, _ := json.Marshal(record)
 
 	msg := kafka.Message{

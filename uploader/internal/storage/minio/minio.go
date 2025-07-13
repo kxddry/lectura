@@ -2,8 +2,8 @@ package minio
 
 import (
 	"context"
-	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"github.com/kxddry/lectura/uploader/internal/config"
+	"github.com/kxddry/lectura/uploader/internal/entities"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
@@ -12,13 +12,12 @@ type MinioClient struct {
 	mclient *minio.Client
 }
 
-func (m *MinioClient) Upload(ctx context.Context, fc uploaded.FileConfig) error {
-	_, err := m.mclient.PutObject(ctx, fc.Bucket, fc.FileID+fc.Extension, fc.File, fc.FileSize,
-		minio.PutObjectOptions{ContentType: fc.FileType})
+func (m *MinioClient) Upload(ctx context.Context, file entities.File, bucket string) error {
+	_, err := m.mclient.PutObject(ctx, bucket, file.UUID+file.Extension, file.Data, file.Size, minio.PutObjectOptions{ContentType: file.Type})
 	return err
 }
 
-func (m *MinioClient) EnsureBucketExists(ctx context.Context, bucket string) error {
+func EnsureBucketExists(m *MinioClient, ctx context.Context, bucket string) error {
 	err := m.mclient.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
 	if err != nil {
 		exists, errBucketExists := m.mclient.BucketExists(ctx, bucket)
@@ -30,7 +29,7 @@ func (m *MinioClient) EnsureBucketExists(ctx context.Context, bucket string) err
 	return nil
 }
 
-func New(cfg config.Storage) (*MinioClient, error) {
+func New(cfg config.S3Storage) (*MinioClient, error) {
 	mclient, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
 		Secure: cfg.UseSSL,

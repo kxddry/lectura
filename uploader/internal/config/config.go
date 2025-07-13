@@ -5,12 +5,14 @@ import (
 )
 
 type Config struct {
-	Env     string  `yaml:"env" env-required:"true"`
-	Storage Storage `yaml:"storage" env-required:"true"`
-	Server  Server  `yaml:"server" env-required:"true"`
-	Kafka   Kafka   `yaml:"kafka" env-required:"true"`
+	Env       string    `yaml:"env" env-required:"true"`
+	AppSecret string    `env:"APP_SECRET" env-required:"true"`
+	S3Storage S3Storage `yaml:"s3storage" env-required:"true"`
+	Server    Server    `yaml:"server" env-required:"true"`
+	Kafka     Kafka     `yaml:"kafka" env-required:"true"`
+	Clients   Clients   `yaml:"clients" env-required:"true"`
 }
-type Storage struct {
+type S3Storage struct {
 	Type            string `yaml:"type" env-required:"true"`
 	Endpoint        string `yaml:"endpoint" env-required:"true"`
 	AccessKeyID     string `yaml:"access_key_id" env-required:"true"`
@@ -34,4 +36,15 @@ type Kafka struct {
 	Acks            string        `yaml:"acks" env-default:"all"`        // 0 | 1 | all
 	Compression     string        `yaml:"compression" env-default:"lz4"` // lz4 | snappy | none | gzip | zstd
 	Timeout         time.Duration `yaml:"timeout" env-default:"5s"`      // time.Duration
+}
+
+type Clients struct {
+	SSO SSO `yaml:"sso" env-required:"true"`
+}
+
+type SSO struct {
+	Address  string        `yaml:"address" env-required:"true"`
+	Timeout  time.Duration `yaml:"timeout" env-default:"5s"`
+	Retries  int           `yaml:"retries" env-default:"5"`
+	Insecure bool          `yaml:"insecure" env-default:"true"`
 }

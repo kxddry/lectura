@@ -3,7 +3,7 @@ package converter
 import (
 	"bytes"
 	"fmt"
-	"github.com/kxddry/lectura/shared/entities/uploaded"
+	"github.com/kxddry/lectura/uploader/internal/entities"
 	"io"
 	"os"
 	"os/exec"
@@ -11,10 +11,11 @@ import (
 
 // ConvertToWav converts a file to wav and returns a FileConfig.
 // Always defer closing the fc.File reader after calling the function
-func ConvertToWav(fc uploaded.FileConfig) (uploaded.FileConfig, error) {
+func ConvertToWav(file entities.File) (entities.File, error) {
+	empty := entities.File{}
 	// Prepare paths
-	tmpInputPath := "/tmp/" + fc.FileID + fc.Extension
-	tmpOutputPath := "/tmp/" + fc.FileID + ".wav"
+	tmpInputPath := "/tmp/" + file.UUID + file.Extension
+	tmpOutputPath := "/tmp/" + file.UUID + ".wav"
 
 	// Make sure we clean up both temp files
 	defer func() {
@@ -25,46 +26,45 @@ func ConvertToWav(fc uploaded.FileConfig) (uploaded.FileConfig, error) {
 	// Write incoming file to a temp
 	inFile, err := os.Create(tmpInputPath)
 	if err != nil {
-		return uploaded.FileConfig{},
+		return empty,
 			fmt.Errorf("failed to create temp input file: %w", err)
 	}
 	// Caller must close the original fc.File; we only close our temp writer
 	defer inFile.Close()
 
-	if _, err := io.Copy(inFile, fc.File); err != nil {
-		return uploaded.FileConfig{},
+	if _, err := io.Copy(inFile, file.Data); err != nil {
+		return empty,
 			fmt.Errorf("failed to write to temp input file: %w", err)
 	}
 
 	// Convert with ffmpeg
 	if err := convertFileToWav(tmpInputPath, tmpOutputPath); err != nil {
-		return uploaded.FileConfig{}, err
+		return empty, err
 	}
 
 	// Open the converted wav
 	outFile, err := os.Open(tmpOutputPath)
 	if err != nil {
-		return uploaded.FileConfig{},
+		return empty,
 			fmt.Errorf("failed to open converted wav: %w", err)
 	}
 
 	info, err := outFile.Stat()
 	if err != nil {
 		_ = outFile.Close()
-		return uploaded.FileConfig{},
+		return empty,
 			fmt.Errorf("failed to stat converted wav: %w", err)
 	}
 
-	fcc := uploaded.FileConfig{
+	out := entities.File{
+		UUID:      file.UUID,
 		Extension: ".wav",
-		FileName:  fc.FileName,
-		FileID:    fc.FileID,
-		File:      outFile,
-		FileSize:  info.Size(),
-		Bucket:    fc.Bucket,
-		FileType:  "audio/wav",
+		Data:      outFile,
+		Size:      info.Size(),
+		Type:      "audio/wav",
 	}
-	return fcc, nil
+
+	return out, nil
 }
 
 func convertFileToWav(inputPath, outPath string) error {

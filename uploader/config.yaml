@@ -1,6 +1,6 @@
 env: local
 
-storage:
+s3storage:
   type: minio
   endpoint: minio:9000
   access_key_id: ROOTUSER
@@ -23,3 +23,10 @@ kafka:
   acks: all
   compression: lz4
   timeout: 5s
+
+clients:
+  sso:
+    address: "sso:42042"
+    timeout: 5s
+    retries: 5
+    insecure: true

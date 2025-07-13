@@ -9,3 +9,8 @@ type BrokerRecord struct {
 	TextSize int64  `json:"text_size"`
 	Language string `json:"language"`
 }
+
+type TextRecord struct {
+	UserID int64
+	TextID string
+}
