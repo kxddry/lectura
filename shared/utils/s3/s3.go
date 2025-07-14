@@ -3,17 +3,11 @@ package s3
 import (
 	"context"
 	"github.com/kxddry/lectura/shared/entities/config/s3"
+	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
 )
-
-type File interface {
-	FullName() string
-	Data() io.Reader
-	Size() int64
-	MimeType() string
-}
 
 type S3Client struct {
 	client *minio.Client
@@ -34,7 +28,7 @@ func (s3 S3Client) Download(ctx context.Context, bucket string, key string) (io.
 	return s3.client.GetObject(ctx, bucket, key, minio.GetObjectOptions{})
 }
 
-func (s3 S3Client) Upload(ctx context.Context, bucket string, file File) error {
+func (s3 S3Client) Upload(ctx context.Context, bucket string, file uploaded.File) error {
 	_, err := s3.client.PutObject(ctx, bucket, file.FullName(), file.Data(), file.Size(), minio.PutObjectOptions{
 		ContentType: file.MimeType(),
 	})
@@ -45,7 +39,7 @@ func (s3 S3Client) Delete(ctx context.Context, bucket string, key string) error 
 	return s3.client.RemoveObject(ctx, bucket, key, minio.RemoveObjectOptions{})
 }
 
-func (s3 S3Client) EnsureBucketExists(ctx context.Context, bucket string) error {
+func EnsureBucketExists(ctx context.Context, s3 S3Client, bucket string) error {
 	err := s3.client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
 	if err != nil {
 		exists, errBucketExists := s3.client.BucketExists(ctx, bucket)

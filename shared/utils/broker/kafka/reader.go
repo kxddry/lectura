@@ -4,15 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	kafka2 "github.com/kxddry/lectura/shared/entities/config/kafka"
+	"github.com/kxddry/lectura/shared/entities/summarized"
+	"github.com/kxddry/lectura/shared/entities/transcribed"
+	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"github.com/segmentio/kafka-go"
 	"time"
 )
 
-type Reader[T any] struct {
+type Reader[T uploaded.Record | transcribed.Record | summarized.Record] struct {
 	r *kafka.Reader
 }
 
-func NewReader[T any](cfg kafka2.ReaderConfig) Reader[T] {
+func NewReader[T uploaded.Record | transcribed.Record | summarized.Record](cfg kafka2.ReaderConfig) Reader[T] {
 	var startOffset int64
 	switch cfg.StartOffset {
 	case "earliest":

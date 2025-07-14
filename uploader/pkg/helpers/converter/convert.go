@@ -7,15 +7,22 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 )
 
 // ConvertToWav converts a file to wav and returns a FileConfig.
 // Always defer closing the fc.File reader after calling the function
 func ConvertToWav(file entities.File) (entities.File, error) {
 	empty := entities.File{}
+
+	full := file.FullName()
+	ext := path.Ext(full)
+
+	withoutExt := full[:len(full)-len(ext)]
+
 	// Prepare paths
-	tmpInputPath := "/tmp/" + file.UUID + file.Extension
-	tmpOutputPath := "/tmp/" + file.UUID + ".wav"
+	tmpInputPath := "/tmp/" + file.FullName()
+	tmpOutputPath := "/tmp/" + withoutExt + ".wav"
 
 	// Make sure we clean up both temp files
 	defer func() {
@@ -32,7 +39,7 @@ func ConvertToWav(file entities.File) (entities.File, error) {
 	// Caller must close the original fc.File; we only close our temp writer
 	defer inFile.Close()
 
-	if _, err := io.Copy(inFile, file.Data); err != nil {
+	if _, err := io.Copy(inFile, file.Data()); err != nil {
 		return empty,
 			fmt.Errorf("failed to write to temp input file: %w", err)
 	}
@@ -56,13 +63,7 @@ func ConvertToWav(file entities.File) (entities.File, error) {
 			fmt.Errorf("failed to stat converted wav: %w", err)
 	}
 
-	out := entities.File{
-		UUID:      file.UUID,
-		Extension: ".wav",
-		Data:      outFile,
-		Size:      info.Size(),
-		Type:      "audio/wav",
-	}
+	out := entities.New(withoutExt, ext, outFile, info.Size(), "audio/wav")
 
 	return out, nil
 }

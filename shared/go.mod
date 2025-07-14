@@ -10,6 +10,7 @@ require (
 	github.com/kxddry/go-utils v1.0.1
 	github.com/kxddry/sso-protos/v2 v2.0.0
 	github.com/labstack/echo/v4 v4.13.4
+	github.com/lib/pq v1.10.9
 	github.com/minio/minio-go/v7 v7.0.94
 	github.com/segmentio/kafka-go v0.4.48
 	google.golang.org/grpc v1.73.0

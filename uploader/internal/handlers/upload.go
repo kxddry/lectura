@@ -6,11 +6,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/kxddry/go-utils/pkg/logger/handlers/sl"
 	"github.com/kxddry/lectura/shared/entities/uploaded"
-	"github.com/kxddry/lectura/shared/utils/s3"
-	"github.com/kxddry/lectura/uploader/internal/config"
 	"github.com/kxddry/lectura/uploader/internal/entities"
 	"github.com/kxddry/lectura/uploader/pkg/helpers/converter"
 	"github.com/labstack/echo/v4"
+	"gopkg.in/vansante/go-ffprobe.v2"
 	"io"
 	"log/slog"
 	"net/http"
@@ -18,7 +17,7 @@ import (
 )
 
 type KafkaWriter interface {
-	Write(context.Context, uploaded.KafkaRecord) error
+	Write(context.Context, uploaded.Record) error
 }
 
 // Client is the interface for S3.
@@ -28,7 +27,7 @@ type Client interface {
 }
 
 type Uploader interface {
-	Upload(ctx context.Context, bucket string, file s3.File) error
+	Upload(ctx context.Context, bucket string, file uploaded.File) error
 }
 
 var allowedMimeTypes = map[string]string{
@@ -43,8 +42,9 @@ var allowedMimeTypes = map[string]string{
 }
 
 const maxUploadSize = 1 << 30 // 1 GB
+const maxFileDuration = 14400 // 4 hours
 
-func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Client, cfg config.Config) echo.HandlerFunc {
+func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Client, bucket string) echo.HandlerFunc {
 	// logging
 	const op = "handlers.uploadHandler"
 	log = log.With(slog.String("op", op))
@@ -95,6 +95,19 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 			return echo.NewHTTPError(http.StatusInternalServerError, "internal server error", err)
 		}
 
+		data, err := ffprobe.ProbeReader(ctx, file)
+		if err != nil {
+			log.Error("failed to probe", sl.Err(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to probe", err)
+		}
+		_, _ = file.Seek(0, io.SeekStart)
+		dur := data.Format.DurationSeconds
+
+		if dur > maxFileDuration {
+			log.Info("audio too long")
+			return echo.NewHTTPError(http.StatusRequestEntityTooLarge, "audio too long, max allowed 4 hours")
+		}
+
 		filename := fileHeader.Filename
 		withoutExt := filename[:len(filename)-len(filepath.Ext(filename))]
 		// generated UUIDv4 file name for storage
@@ -113,7 +126,7 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 			}
 			defer wavFC.Close()
 
-			err = cli.Upload(ctx, cfg.S3Storage.BucketName, wavFC)
+			err = cli.Upload(ctx, bucket, wavFC)
 
 			if err != nil {
 				log.Error("failed to upload converted wav file", sl.Err(err))
@@ -129,15 +142,16 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 		}
 
 		if !wavSent {
-			err = cli.Upload(ctx, cfg.S3Storage.BucketName, fc)
+			err = cli.Upload(ctx, bucket, fc)
 			if err != nil {
 				log.Error("failed to upload original file", sl.Err(err))
 				return c.String(http.StatusInternalServerError, "Failed to upload file: "+err.Error())
 			}
 			log.Info("Uploaded file", slog.String("fileID", fileID))
 		}
-		out := uploaded.KafkaRecord{
-			UUID: fileID,
+		out := uploaded.Record{
+			UUID:   fileID,
+			Bucket: bucket,
 			Update: struct {
 				UserID      int64  `json:"user_id"`
 				OGFileName  string `json:"og_file_name"`

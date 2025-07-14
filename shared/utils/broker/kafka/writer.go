@@ -4,24 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	kafka2 "github.com/kxddry/lectura/shared/entities/config/kafka"
+	"github.com/kxddry/lectura/shared/entities/summarized"
+	"github.com/kxddry/lectura/shared/entities/transcribed"
+	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/compress"
 	"time"
 )
 
-/*
-Documentation
-
-type Writer[T any] interface {
-	Write(T) error
-}
-
-type Reader[T any] interface {
-	Messages(context.Context) (<-chan T, <-chan error)
-}
-*/
-
-type Writer[T any] struct {
+type Writer[T uploaded.Record | transcribed.Record | summarized.Record] struct {
 	w *kafka.Writer
 }
 
@@ -36,7 +27,7 @@ func (w Writer[T]) Write(ctx context.Context, record T) error {
 	return w.w.WriteMessages(ctx, msg)
 }
 
-func NewWriter[T any](cfg kafka2.WriterConfig) Writer[T] {
+func NewWriter[T uploaded.Record | transcribed.Record | summarized.Record](cfg kafka2.WriterConfig) Writer[T] {
 	var compression kafka.Compression
 
 	switch cfg.Compression {

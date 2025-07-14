@@ -31,6 +31,12 @@ func main() {
 	log := logger.SetupLogger(cfg.Env)
 	log.Debug("debug enabled")
 
+	bucket := os.Getenv("BUCKET")
+	if bucket == "" {
+		log.Warn("Environment variable BUCKET is not set. Set BUCKET=input.")
+		bucket = "input"
+	}
+
 	// init S3 client
 	s3Client, err := s3.NewClient(cfg.S3Storage)
 	if err != nil {
@@ -38,13 +44,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = s3Client.EnsureBucketExists(ctx, cfg.S3Storage.BucketName); err != nil {
+	if err = s3.EnsureBucketExists(ctx, s3Client, bucket); err != nil {
 		log.Error("Failed to ensure bucket exists", sl.Err(err))
 		os.Exit(1)
 	}
 
 	// init kafka writer
-	w := kafka.NewWriter[uploaded.KafkaRecord](cfg.Kafka)
+	w := kafka.NewWriter[uploaded.Record](cfg.Kafka)
 
 	// init router
 	e := echo.New()
@@ -57,10 +63,10 @@ func main() {
 		AllowHeaders:     []string{"Content-Type"},
 		AllowCredentials: true,
 	}))
-	e.Use(middleware.BodyLimit("1G"))
+	e.Use(middleware.BodyLimit("1GB"))
 	e.Use(middleware2.JWTFromCookie(secret))
 
-	e.POST("/api/upload", handlers.UploadHandler(ctx, log, w, s3Client, cfg))
+	e.POST("/api/upload", handlers.UploadHandler(ctx, log, w, s3Client, bucket))
 	log.Info("Server started at " + cfg.Server.Address)
 	e.Logger.Fatal(e.Start(cfg.Server.Address))
 }

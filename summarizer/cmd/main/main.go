@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
+	"github.com/kxddry/lectura/shared/entities/summarized"
 	"github.com/kxddry/lectura/shared/entities/transcribed"
+	"github.com/kxddry/lectura/shared/utils/broker/kafka"
 	"github.com/kxddry/lectura/shared/utils/config"
 	"github.com/kxddry/lectura/shared/utils/logger"
 	"github.com/kxddry/lectura/shared/utils/logger/handlers/sl"
-	"github.com/kxddry/lectura/summarizer/internal/broker/kafka"
 	config2 "github.com/kxddry/lectura/summarizer/internal/config"
 	"github.com/kxddry/lectura/summarizer/internal/handlers"
 	"github.com/kxddry/lectura/summarizer/internal/llm"
-	"github.com/kxddry/lectura/summarizer/internal/storage/minio"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -33,38 +33,14 @@ func main() {
 		log.Warn("API key is empty!")
 	}
 
-	mc, err := minio.New(cfg.Storage)
-	if err != nil {
-		log.Error("Error creating minio client", sl.Err(err))
-		os.Exit(1)
-	}
-	if err = mc.EnsureBucketExists(ctx, cfg.Storage.BucketInput); err != nil {
-		log.Error("Failed to ensure bucket for input exists", sl.Err(err))
-		os.Exit(1)
-	}
-	if err = mc.EnsureBucketExists(ctx, cfg.Storage.BucketOutput); err != nil {
-		log.Error("Failed to ensure bucket for output exists", sl.Err(err))
-		os.Exit(1)
-	}
+	r := kafka.NewReader[transcribed.Record](cfg.Kafka.Reader)
+	w := kafka.NewWriter[summarized.Record](cfg.Kafka.Writer)
 
-	log.Debug("minio client created")
-
-	if err = kafka.CheckAlive(cfg.Kafka.Brokers); err != nil {
-		log.Error("CheckAlive failed", sl.Err(err))
-		os.Exit(1)
-	}
-	// read uploaded files
-	r := kafka.NewReader(&cfg.Kafka)
-	msgCh, errCh := r.Messages(ctx)
-	// and send out texts
-	kp := handlers.KafkaPipeline{
-		msgCh, errCh, kafka.NewWriter(&cfg.Kafka),
-	}
-	log.Debug("kafka clients created")
+	kp := kafka.NewPipeline(r, w)
 
 	// create a worker pool
 
-	jobs := make(chan transcribed.BrokerRecord, 100)
+	jobs := make(chan transcribed.Record, 100)
 	results := make(chan error, 100)
 
 	for i := 0; i < workerPoolSize; i++ {
@@ -72,8 +48,7 @@ func main() {
 		// workers handling jobs
 		go func(id int) {
 			for msg := range jobs {
-				err := handlers.Pipeline(ctx, &cfg, llm.OpenAI{&cfg}, mc, kp, msg)
-
+				err := handlers.Pipeline(ctx, llm.OpenAI{&cfg}, kp, msg)
 				if err != nil {
 					log.Error("error processing job", sl.Err(err))
 				}
@@ -97,14 +72,12 @@ func main() {
 	log.Info("signal received, shutting down gracefully")
 }
 
-func distributeJobs(ctx context.Context, log *slog.Logger, kp handlers.KafkaPipeline, jobs chan<- transcribed.BrokerRecord) {
-	msgCh := kp.InputCh
-	errCh := kp.ErrCh
+func distributeJobs[R transcribed.Record, W summarized.Record](ctx context.Context, log *slog.Logger, kp kafka.Pipeline[R, W], jobs chan<- R) {
+	msgCh, errCh := kp.R.Messages(ctx)
 	for {
 		// orchestrate
 		select {
 		case msg := <-msgCh:
-			log.Debug("message sent to jobs", slog.String("msg", msg.TextID))
 			jobs <- msg
 		case err := <-errCh:
 			log.Error("kafka reader", sl.Err(err))

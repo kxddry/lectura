@@ -3,13 +3,13 @@ package whisper
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/kxddry/lectura/shared/entities/transcribed"
+	"github.com/kxddry/lectura/asr/internal/entities"
 	"io"
 	"mime/multipart"
 	"net/http"
 )
 
-func CallWhisperAPI(apiUrl string, file io.Reader) (*transcribed.TranscribeResponse, error) {
+func CallWhisperAPI(apiUrl string, file io.Reader) (*entities.TranscribeResponse, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -37,7 +37,7 @@ func CallWhisperAPI(apiUrl string, file io.Reader) (*transcribed.TranscribeRespo
 	}
 	defer resp.Body.Close()
 
-	var result transcribed.TranscribeResponse
+	var result entities.TranscribeResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err

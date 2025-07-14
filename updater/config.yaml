@@ -1,0 +1,22 @@
+env: local
+
+kafka:
+  brokers:
+    - kafka:9092
+  read:
+    topic: "-"
+    group_id: updater
+    min_bytes: 1
+    max_bytes: 1048576
+    commit_interval: 5s
+    start_offset: latest
+
+storage:
+
+migrations:
+  path: "../migrations"
+
+kafka_topics:
+  - file.uploaded
+  - asr.done
+  - sum.done

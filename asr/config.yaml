@@ -1,6 +1,6 @@
 env: local
 
-storage:
+s3storage:
   type: minio
   endpoint: minio:9000
   access_key_id: ROOTUSER
