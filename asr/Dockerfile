@@ -13,7 +13,7 @@ COPY asr/ ./
 
 RUN go build -o app ./cmd/main
 
-FROM debian:bookworm-slim
+FROM scratch
 LABEL authors="iv"
 
 
