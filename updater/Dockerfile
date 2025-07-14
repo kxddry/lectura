@@ -13,10 +13,8 @@ COPY updater/ ./
 
 RUN go build -o app ./cmd/main
 
-FROM debian:bookworm-slim
+FROM scratch
 LABEL authors="iv"
-
-RUN apt-get update && apt-get install -y ffmpeg
 
 COPY --from=builder /app/updater/app /app/updater/app
 
