@@ -4,22 +4,21 @@ LABEL org.opencontainers.image.source=https://github.com/kxddry/lectura
 
 COPY shared/ /app/shared/
 
-WORKDIR /app/uploader
+WORKDIR /app/api-gateway
 
-COPY uploader/go.* ./
+COPY api-gateway/go.* ./
 RUN go mod download
 
-COPY uploader/ ./
+COPY api-gateway/ ./
 
 
 RUN go build -o app ./cmd/main
 
-FROM debian:bookworm-slim
+FROM scratch
 LABEL authors="iv"
 
-RUN apt-get update && apt-get install -y ffmpeg
 
-COPY --from=builder /app/uploader/app /app/uploader/app
+COPY --from=builder /app/api-gateway/app /app/api-gateway/app
 
 
-CMD ["/app/uploader/app"]
+CMD ["/app/api-gateway/app"]

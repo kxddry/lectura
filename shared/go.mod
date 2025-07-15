@@ -8,7 +8,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/kxddry/go-utils v1.0.1
-	github.com/kxddry/sso-protos/v2 v2.0.0
+	github.com/kxddry/sso-protos/v2 v2.2.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/lib/pq v1.10.9
 	github.com/minio/minio-go/v7 v7.0.94

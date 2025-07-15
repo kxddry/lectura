@@ -1,5 +1,6 @@
 FROM golang:1.24 AS builder
 LABEL authors="iv"
+LABEL org.opencontainers.image.source=https://github.com/kxddry/lectura
 
 COPY shared/ /app/shared/
 
@@ -13,13 +14,11 @@ COPY summarizer/ ./
 
 RUN go build -o app ./cmd/main
 
-FROM debian:bookworm-slim
+FROM scratch
 LABEL authors="iv"
 
 
 COPY --from=builder /app/summarizer/app /app/summarizer/app
 
-ENV CONFIG_PATH=/app/config.yaml
-ENV OPENAI_API_KEY=${OPENAI_API_KEY}
 
 CMD ["/app/summarizer/app"]

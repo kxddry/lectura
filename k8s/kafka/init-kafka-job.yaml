@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-kafka
+spec:
+  template:
+    spec:
+      containers:
+        - name: init-kafka
+          image: apache/kafka:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+              
+              echo "Creating kafka topics"
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic file.uploaded --replication-factor 1 --partitions 1
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic asr.done --replication-factor 1 --partitions 1
+              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic sum.done --replication-factor 1 --partitions 1
+              
+              echo "Following topics available:"
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+      restartPolicy: OnFailure

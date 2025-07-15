@@ -1,5 +1,6 @@
 FROM golang:1.24 AS builder
 LABEL authors="iv"
+LABEL org.opencontainers.image.source=https://github.com/kxddry/lectura
 
 COPY shared/ /app/shared/
 
@@ -18,7 +19,5 @@ LABEL authors="iv"
 
 
 COPY --from=builder /app/asr/app /app/asr/app
-
-ENV CONFIG_PATH=/app/config.yaml
 
 CMD ["/app/asr/app"]
