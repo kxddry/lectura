@@ -6,7 +6,6 @@ server:
 
 services:
   frontend_addr: [frontend]
-  uploader_addr: uploader:8000
   auth:
     address: auth:42042
     timeout: 5s

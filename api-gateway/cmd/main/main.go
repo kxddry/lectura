@@ -33,7 +33,6 @@ func main() {
 	}
 
 	pubKeyMap, err := ed25519.LoadPublicKeys(cfg.PublicKeys)
-	_ = pubKeyMap
 	if err != nil {
 		log.Error("Failed to load public keys", "err", err)
 		os.Exit(1)
@@ -75,12 +74,8 @@ func main() {
 
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(cfg.RateLimit))))
 
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
 	e.POST("/api/v1/login", handlers.Login(ctx, log, auth, auth.AppId, true, "access_token", *auth.AuthPubkey))
 	e.POST("/api/v1/register", handlers.Register(ctx, log, auth, auth.AppId, true, "access_token", *auth.AuthPubkey))
-	e.POST("/api/v1/upload", handlers.Upload(log, cfg.UploaderURI, "access_token"))
 
 	e.Logger.Fatal(e.Start(cfg.Server.Address))
 	// graceful shutdown

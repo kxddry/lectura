@@ -60,6 +60,7 @@ func main() {
 	for i := 0; i < workerPoolSize; i++ {
 		go func(id int) {
 			for msg := range jobs {
+				log.Debug("processing msg", slog.String("UUID", msg.UUID))
 				err := handlers.Pipeline(ctx, cfg, cli, kp, msg)
 				if err != nil {
 					log.Error("error processing job", sl.Err(err))

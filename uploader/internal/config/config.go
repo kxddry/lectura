@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/kxddry/lectura/shared/entities/auth"
+	"github.com/kxddry/lectura/shared/entities/config/app"
 	"github.com/kxddry/lectura/shared/entities/config/kafka"
 	"github.com/kxddry/lectura/shared/entities/config/s3"
 	"github.com/kxddry/lectura/shared/entities/config/services"
@@ -16,6 +17,8 @@ type Config struct {
 	PubkeyPath  string                `yaml:"pubkey_path" env-required:"true"`
 	PrivkeyPath string                `yaml:"privkey_path"`
 	PublicKeys  []auth.PublicKeyEntry `yaml:"public_keys" env-required:"true"`
+	App         app.App               `yaml:"app" env-required:"true"`
+	RateLimit   int64                 `yaml:"rate_limit" env-required:"true"`
 }
 
 type Clients struct {

@@ -41,3 +41,5 @@ go.work.sum
 /kafka/
 
 *.secret
+*.pem
+/.keys

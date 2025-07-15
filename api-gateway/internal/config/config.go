@@ -19,7 +19,5 @@ type Config struct {
 }
 
 type Services struct {
-	FrontendAddr []string     `yaml:"frontend_addr" env-required:"true"`
-	UploaderURI  string       `yaml:"uploader_addr" env-required:"true"`
-	Auth         services.SSO `yaml:"auth" env-required:"true"`
+	Auth services.SSO `yaml:"auth" env-required:"true"`
 }

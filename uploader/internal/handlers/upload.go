@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/uuid"
 	"github.com/kxddry/go-utils/pkg/logger/handlers/sl"
@@ -41,18 +42,20 @@ var allowedMimeTypes = map[string]string{
 	"audio/mp4":       ".mp3",
 }
 
-const maxUploadSize = 1 << 30 // 1 GB
 const maxFileDuration = 14400 // 4 hours
 
-func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Client, bucket string) echo.HandlerFunc {
-	// logging
+func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Client, bucket, cookieName string) echo.HandlerFunc {
 	const op = "handlers.uploadHandler"
 	log = log.With(slog.String("op", op))
 
 	return func(c echo.Context) error {
 
+		if _, err := c.Cookie(cookieName); err != nil && errors.Is(err, http.ErrNoCookie) {
+			return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		}
+
 		uid := c.Get("uid")
-		if uidInt, ok := uid.(int64); !ok || uidInt == 0 {
+		if uidInt, ok := uid.(uint); !ok || uidInt == 0 {
 			return echo.NewHTTPError(http.StatusUnauthorized, "uid missing")
 		}
 
@@ -60,11 +63,6 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 		// failed to get file
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to get file", err)
-		}
-
-		// validate weight
-		if fileHeader.Size > maxUploadSize {
-			return echo.NewHTTPError(http.StatusRequestEntityTooLarge, "File too big. Max allowed: 1G")
 		}
 
 		file, err := fileHeader.Open()
@@ -153,12 +151,12 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 			UUID:   fileID,
 			Bucket: bucket,
 			Update: struct {
-				UserID      int64  `json:"user_id"`
+				UserID      uint   `json:"user_id"`
 				OGFileName  string `json:"og_file_name"`
 				OGExtension string `json:"og_extension"`
 				Status      int    `json:"status"`
 			}{
-				UserID:      uid.(int64),
+				UserID:      uid.(uint),
 				OGFileName:  withoutExt,
 				OGExtension: ext,
 				Status:      0,
