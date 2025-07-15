@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	Env         string          `yaml:"env" env-required:"true"`
-	Server      services.Server `yaml:"server" env-required:"true"`
-	Services    `yaml:"services" env-required:"true"`
+	Services `yaml:"services" env-required:"true"`
+
+	Env         string                `yaml:"env" env-required:"true"`
+	Server      services.Server       `yaml:"server" env-required:"true"`
 	RateLimit   int                   `yaml:"rate_limit" env:"RATE_LIMIT" env-default:"100"`
 	App         app.App               `yaml:"app" env-required:"true"`
 	PubkeyPath  string                `yaml:"pubkey_path" env:"PUBKEY_PATH" env-required:"true"`

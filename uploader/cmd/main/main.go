@@ -74,7 +74,7 @@ func main() {
 		CookieName: "access_token",
 	}))
 
-	e.POST("/api/upload", handlers.UploadHandler(ctx, log, w, s3Client, bucket))
+	e.POST("/api/v1/upload", handlers.UploadHandler(ctx, log, w, s3Client, bucket))
 	log.Info("Server started at " + cfg.Server.Address)
 	e.Logger.Fatal(e.Start(cfg.Server.Address))
 }

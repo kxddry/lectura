@@ -1,0 +1,14 @@
+storage:
+  host: postgres
+  port: 5432
+  user: postgres
+  password: password
+  dbname: postgres  # just use postgres bro
+  sslmode: disable
+
+
+dbs_migrations:
+  - name: sso
+    path: /migrations/sso
+  - name: app
+    path: /migrations/app

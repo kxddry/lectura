@@ -129,3 +129,18 @@ func InterceptorLogger(l *slog.Logger) grpclog.Logger {
 		l.Log(ctx, slog.Level(lvl), msg, fields...)
 	})
 }
+
+func (c *Client) GetPublicKey(ctx context.Context) (*ed25519.PublicKey, string, error) {
+	const op = "grpc.GetPublicKey"
+
+	resp, err := c.api.GetPublicKey(ctx, &ssov2.PubkeyRequest{})
+	if err != nil {
+		return nil, "", fmt.Errorf("%s: %w", op, err)
+	}
+	pubKey, err := base64.UnmarshalPubKey(resp.Pubkey)
+	if err != nil {
+		return nil, "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &pubKey, resp.KeyId, nil
+}

@@ -1,0 +1,17 @@
+env: "local" # local, dev, prod
+token_ttl: 1h
+postgres:
+    host: "postgres"
+    port: 5432
+    user: "postgres"
+    password: "password"
+    dbname: "sso"
+    sslmode: "disable"
+
+grpc:
+    port: 42042
+    timeout: 5s
+
+privkey_path: /private.pem
+pubkey_path: /public.pem
+key_id: auth-service

@@ -1,0 +1,19 @@
+env: local
+kafka:
+  brokers:
+    - kafka:9092
+  topic: file.uploaded
+  group_id: asr
+
+storage:
+  host: postgres
+  port: 5432
+  user: "postgres"
+  password: "password"
+  dbname: "sso"
+  sslmode: "disable"
+
+kafka_topics:
+  - file.uploaded
+  - asr.done
+  - sum.done

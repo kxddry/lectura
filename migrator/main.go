@@ -3,12 +3,9 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/kxddry/lectura/shared/entities/config/db"
-	cc "github.com/kxddry/lectura/updater/internal/config"
-	"log"
 	"os"
 	"strings"
 
@@ -20,37 +17,51 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-// USAGE:
-// --config=/path/to/config.yaml
-// inside config.yaml:
-// Storage: host, port, user, password, dbname, sslmode
-// Migrations: /path/to/migrations/*.sql - folder
+type MigrationConfig struct {
+	St            db.StorageConfig `yaml:"storage" env-required:"true"` // use dbname = postgres here
+	Operation     string           `env:"OPERATION" yaml:"operation" env-default:"up"`
+	DbsMigrations []Entry          `yaml:"dbs_migrations" env-required:"true"`
+}
+
+type Entry struct {
+	Name string `yaml:"name"` // DBName
+	Path string `yaml:"path"` // Path for migrations
+}
+
 func main() {
-	var op string
-	flag.StringVar(&op, "operation", "", "operation: up or down")
-	if op == "" {
-		op = os.Getenv("OPERATION")
-	}
 	confPath := os.Getenv("CONFIG_PATH")
 	if confPath == "" {
 		panic("CONFIG_PATH env variable not set")
 	}
 
-	var cfg cc.Config
+	var cfg MigrationConfig
 	if err := cleanenv.ReadConfig(confPath, &cfg); err != nil {
 		panic(err)
 	}
+	op := cfg.Operation
 
-	pSt := cfg.Storage
-	pSt.DBName = "postgres"
-	dsn := DataSourceName(pSt)
-	link := Link(cfg.Storage)
-	err := EnsureDBexists(cfg.Storage.DBName, dsn)
-	if err != nil {
-		panic(err)
+	if len(cfg.DbsMigrations) == 0 {
+		panic("No dbs migrations configured")
 	}
 
-	m, err := migrate.New("file://"+cfg.Migrations.Path, link)
+	for _, m := range cfg.DbsMigrations {
+		name, path := m.Name, m.Path
+		ccfg := cfg.St
+		ccfg.DBName = name
+		err := EnsureDBexists(name, ccfg)
+		if err != nil {
+			panic(err)
+		}
+		link := Link(ccfg)
+
+		DoOneMigration(link, path, op)
+	}
+
+	fmt.Println("migration successful")
+}
+
+func DoOneMigration(link, path, op string) {
+	m, err := migrate.New("file://"+path, link)
 	if err != nil {
 		panic(err)
 	}
@@ -58,27 +69,26 @@ func main() {
 	case op == "" || op == "up":
 		if err = m.Up(); err != nil {
 			if errors.Is(err, migrate.ErrNoChange) {
-				log.Println("Nothing to migrate")
+				fmt.Println("Nothing to migrate at", path)
 				return
 			}
 			panic(err)
 		}
+		return
 	case op == "down":
 		if err = m.Force(1); err != nil {
 			panic(err)
 		}
 		if err = m.Down(); err != nil {
 			if errors.Is(err, migrate.ErrNoChange) {
-				log.Println("Nothing to migrate")
+				fmt.Println("Nothing to migrate at", path)
 				return
 			}
 			panic(err)
 		}
 	default:
-		log.Fatalln("Unknown operation:", op)
+		panic("Unknown operation: " + op)
 	}
-
-	log.Println("migration successful")
 }
 
 func Link(cfg db.StorageConfig) string {
@@ -89,15 +99,16 @@ func DataSourceName(cfg db.StorageConfig) string {
 	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)
 }
 
-func EnsureDBexists(dbname, dsn string) error {
-	_db, err := sql.Open("postgres", dsn)
+func EnsureDBexists(dbname string, adminCfg db.StorageConfig) error {
+	adminCfg.DBName = "postgres"
+	_db, err := sql.Open("postgres", DataSourceName(adminCfg))
 	if err != nil {
 		return err
 	}
-	defer func() { _ = _db.Close() }()
+	defer _db.Close()
 
-	_, err = _db.Exec("CREATE DATABASE" + " " + dbname)
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
+	_, err = _db.Exec("CREATE DATABASE " + dbname)
+	if err != nil && !strings.Contains(err.Error(), "already exists") && !strings.Contains(err.Error(), "no change") {
 		return err
 	}
 	return nil

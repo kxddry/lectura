@@ -18,17 +18,15 @@ import (
 	"syscall"
 )
 
-const (
-	workerPoolSize = 3
-	multi          = 5
-)
-
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	var cfg cc.Config
 	config.MustParseConfig(&cfg)
+
+	workerPoolSize := cfg.WorkerPoolSize
+	multi := cfg.WorkerPoolMultiplier
 
 	if len(cfg.KafkaTopics) != 3 {
 		panic("3 topics required: uploaded, asm, sum")
@@ -41,6 +39,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Debug("sql created")
 
 	jobs := make(chan any, workerPoolSize*multi)
 	results := make(chan error, workerPoolSize*multi)

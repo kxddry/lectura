@@ -15,7 +15,7 @@ func Upload(log *slog.Logger, uploaderURI, cookieName string) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 		}
 
-		target := strings.TrimRight(uploaderURI, "/") + c.Request().RequestURI
+		target := "https://" + strings.TrimRight(uploaderURI, "/") + c.Request().RequestURI
 		log.Info("redirect", slog.String("target", target))
 		return c.Redirect(http.StatusTemporaryRedirect, target)
 	}

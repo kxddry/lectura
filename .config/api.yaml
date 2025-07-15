@@ -1,0 +1,23 @@
+env: local # local / dev / prod
+server:
+  address: 0.0.0.0:8080
+  timeout: 5s
+  idle_timeout: 60s
+
+services:
+  frontend_addr: [frontend]
+  uploader_addr: uploader:8000
+  auth:
+    address: auth:42042
+    timeout: 5s
+    retries: 5
+    insecure: true
+
+rate_limit: 100
+app:
+  name: api-gateway
+
+pubkey_path: /public.pem
+privkey_path: /private.pem
+
+public_keys:

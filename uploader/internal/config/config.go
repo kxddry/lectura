@@ -9,10 +9,9 @@ import (
 
 type Config struct {
 	Env         string                `yaml:"env" env-required:"true"`
-	AppSecret   string                `env:"APP_SECRET" env-required:"true"`
 	S3Storage   s3.StorageConfig      `yaml:"s3storage" env-required:"true"`
 	Server      services.Server       `yaml:"server" env-required:"true"`
-	Kafka       kafka.WriterConfig    `yaml:"kafka" env-required:"true"`
+	Kafka       kafka.WriterConfig    `yaml:"writer" env-required:"true"`
 	Clients     Clients               `yaml:"clients" env-required:"true"`
 	PubkeyPath  string                `yaml:"pubkey_path" env-required:"true"`
 	PrivkeyPath string                `yaml:"privkey_path"`

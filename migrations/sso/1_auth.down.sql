@@ -1,0 +1,3 @@
+DROP TABLE admins;
+DROP TABLE apps;
+DROP TABLE users;
