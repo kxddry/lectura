@@ -1,3 +1,17 @@
+# need:
+#
+# minio, postgres, kafka, init-kafka
+#
+# uploader, asr, summarizer
+#
+# whisper-api, (optional) summarizer-api
+#
+# api-gateway, updater
+#
+# auth
+#
+# frontend
+
 services:
   minio:
     image: quay.io/minio/minio
@@ -23,7 +37,6 @@ services:
       - pgdata:/var/lib/postgresql/data
     expose:
       - "5432:5432"
-
 
   kafka:
     image: apache/kafka:latest
@@ -134,15 +147,16 @@ services:
     volumes:
       - ./summarizer/config.yaml:/app/config.yaml
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+    volumes:
+      - ./api-gateway/config.yaml:/app/config.yaml
 
 
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - uploader
-    restart: unless-stopped
 
   updater:
     build:

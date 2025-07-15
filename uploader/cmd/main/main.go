@@ -5,6 +5,7 @@ import (
 	"github.com/kxddry/lectura/shared/entities/uploaded"
 	"github.com/kxddry/lectura/shared/utils/broker/kafka"
 	"github.com/kxddry/lectura/shared/utils/config"
+	"github.com/kxddry/lectura/shared/utils/ed25519"
 	"github.com/kxddry/lectura/shared/utils/logger"
 	"github.com/kxddry/lectura/shared/utils/logger/handlers/sl"
 	middleware2 "github.com/kxddry/lectura/shared/utils/middleware"
@@ -24,8 +25,6 @@ func main() {
 	// parse config
 	var cfg cc.Config
 	config.MustParseConfig(&cfg)
-
-	secret := []byte(cfg.AppSecret)
 
 	// init logger
 	log := logger.SetupLogger(cfg.Env)
@@ -49,6 +48,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	pubKeyMap, err := ed25519.LoadPublicKeys(cfg.PublicKeys)
+	if err != nil {
+		log.Error("Error loading public keys", sl.Err(err))
+		os.Exit(1)
+	}
+
 	// init kafka writer
 	w := kafka.NewWriter[uploaded.Record](cfg.Kafka)
 
@@ -64,7 +69,10 @@ func main() {
 		AllowCredentials: true,
 	}))
 	e.Use(middleware.BodyLimit("1GB"))
-	e.Use(middleware2.JWTFromCookie(secret))
+	e.Use(middleware2.JWTMiddleware(middleware2.JWTMiddlewareConfig{
+		PublicKeys: pubKeyMap,
+		CookieName: "access_token",
+	}))
 
 	e.POST("/api/upload", handlers.UploadHandler(ctx, log, w, s3Client, bucket))
 	log.Info("Server started at " + cfg.Server.Address)
