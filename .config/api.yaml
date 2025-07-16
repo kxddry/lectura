@@ -1,16 +1,30 @@
 env: local # local / dev / prod
 server:
-  address: 0.0.0.0:8080
+  address: :8080
   timeout: 5s
   idle_timeout: 60s
 
 services:
-  frontend_addr: [frontend]
   auth:
     address: auth:42042
     timeout: 5s
     retries: 5
     insecure: true
+
+storage:
+  host: postgres
+  port: 5432
+  user: "postgres"
+  password: "password"
+  dbname: "app"
+  sslmode: "disable"
+
+s3storage:
+  endpoint: minio:9000
+  public_url: http://localhost
+  access_key: ROOTUSER
+  secret: CHANGEME123
+  ssl: false
 
 rate_limit: 100
 app:

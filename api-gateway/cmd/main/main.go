@@ -9,6 +9,8 @@ import (
 	"github.com/kxddry/lectura/shared/utils/ed25519"
 	"github.com/kxddry/lectura/shared/utils/logger"
 	middleware2 "github.com/kxddry/lectura/shared/utils/middleware"
+	"github.com/kxddry/lectura/shared/utils/s3"
+	"github.com/kxddry/lectura/shared/utils/storage/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/time/rate"
@@ -16,7 +18,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
+
+const cookieName = "access_token"
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -30,6 +35,22 @@ func main() {
 	if err != nil {
 		log.Error("Failed to load public key", "err", err)
 		os.Exit(1)
+	}
+
+	bucket := os.Getenv("BUCKET")
+	if bucket == "" {
+		log.Warn("Bucket env variable not set, setting BUCKET=input")
+		bucket = "input"
+	}
+
+	sql, err := postgres.New(cfg.Storage)
+	if err != nil {
+		panic(err)
+	}
+
+	cli, err := s3.NewClient(cfg.S3Storage)
+	if err != nil {
+		panic(err)
 	}
 
 	pubKeyMap, err := ed25519.LoadPublicKeys(cfg.PublicKeys)
@@ -74,8 +95,28 @@ func main() {
 
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(cfg.RateLimit))))
 
-	e.POST("/api/v1/login", handlers.Login(ctx, log, auth, auth.AppId, true, "access_token", *auth.AuthPubkey))
-	e.POST("/api/v1/register", handlers.Register(ctx, log, auth, auth.AppId, true, "access_token", *auth.AuthPubkey))
+	e.POST("/api/v1/login", handlers.Login(ctx, log, auth, auth.AppId, true, cookieName, *auth.AuthPubkey))
+	e.POST("/api/v1/register", handlers.Register(ctx, log, auth, auth.AppId, true, cookieName, *auth.AuthPubkey))
+	e.GET("/api/v1/files", handlers.ListFiles(ctx, log, sql, cli, bucket, cfg.Expiry))
+	e.GET("/api/v1/verify-token", func(c echo.Context) error {
+		if uid := c.Get("uid"); uid != nil {
+			return c.JSON(http.StatusOK, uid)
+		}
+		return c.NoContent(http.StatusUnauthorized)
+	})
+
+	e.POST("/api/v1/logout", func(c echo.Context) error {
+		c.SetCookie(&http.Cookie{
+			Name:     cookieName,
+			Value:    "",
+			Expires:  time.Unix(0, 0),
+			Path:     "/",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+		return c.NoContent(http.StatusOK)
+	})
 
 	e.Logger.Fatal(e.Start(cfg.Server.Address))
 	// graceful shutdown

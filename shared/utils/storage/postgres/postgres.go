@@ -135,7 +135,7 @@ func (c *Client) DeleteFile(ctx context.Context, uuid string) error {
 	return tx.Commit()
 }
 
-func (c *Client) ListFiles(ctx context.Context, user_id int64) ([]frontend.File, error) {
+func (c *Client) ListFiles(ctx context.Context, user_id uint) ([]frontend.File, error) {
 	const op = "storage.postgres.listFiles"
 	tx, err := c.db.Begin()
 	if err != nil {
@@ -150,16 +150,16 @@ func (c *Client) ListFiles(ctx context.Context, user_id int64) ([]frontend.File,
 	defer rows.Close()
 	var files []frontend.File
 	for rows.Next() {
-		var uuid, ext, name, mtype string
+		var uuid, ext, name string
 		var status uint8
 		if err := rows.Scan(&name, &ext, &uuid, &status); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 		files = append(files, frontend.File{
 			UUID:     uuid,
-			Name:     name,
+			Name:     name + ext,
 			URL:      "",
-			MimeType: mtype,
+			MimeType: uploaded.Extensions[ext],
 			Status:   status,
 		})
 	}

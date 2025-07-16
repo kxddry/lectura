@@ -10,7 +10,7 @@ storage:
   port: 5432
   user: "postgres"
   password: "password"
-  dbname: "sso"
+  dbname: "app"
   sslmode: "disable"
 
 kafka_topics:

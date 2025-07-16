@@ -15,6 +15,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 )
 
@@ -46,7 +47,9 @@ func main() {
 
 	for i := range workerPoolSize {
 		go func(id int) {
+			log.Debug("worker listening " + strconv.Itoa(id))
 			for msg := range jobs {
+				log.Info("msg received", msg)
 				err = handlers.ProcessMessage(ctx, msg, sql)
 				if err != nil {
 					log.Error("error processing", sl.Err(err))

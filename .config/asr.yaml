@@ -3,6 +3,7 @@ env: local
 whisper_api: http://whisper-api:5678
 s3storage:
   endpoint: minio:9000
+  public_url: http://localhost
   access_key: ROOTUSER
   secret: CHANGEME123
   ssl: false
