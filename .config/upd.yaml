@@ -3,7 +3,7 @@ kafka:
   brokers:
     - kafka:9092
   topic: file.uploaded
-  group_id: asr
+  group_id: upd
 
 storage:
   host: postgres
