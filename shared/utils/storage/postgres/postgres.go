@@ -143,15 +143,16 @@ func (c *Client) ListFiles(ctx context.Context, user_id int64) ([]frontend.File,
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `SELECT og_filename, og_extension, uuid FROM files WHERE user_id = $1;`, user_id)
+	rows, err := tx.QueryContext(ctx, `SELECT og_filename, og_extension, uuid, status FROM files WHERE user_id = $1;`, user_id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	defer rows.Close()
 	var files []frontend.File
 	for rows.Next() {
-		var uuid, name, mtype string
-		if err := rows.Scan(&uuid, &name, &mtype); err != nil {
+		var uuid, ext, name, mtype string
+		var status uint8
+		if err := rows.Scan(&name, &ext, &uuid, &status); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 		files = append(files, frontend.File{
@@ -159,6 +160,7 @@ func (c *Client) ListFiles(ctx context.Context, user_id int64) ([]frontend.File,
 			Name:     name,
 			URL:      "",
 			MimeType: mtype,
+			Status:   status,
 		})
 	}
 	if len(files) == 0 {
