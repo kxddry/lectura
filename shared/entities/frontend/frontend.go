@@ -5,4 +5,5 @@ type File struct {
 	Name     string `json:"name"`
 	URL      string `json:"url"`
 	MimeType string `json:"mime_type"`
+	Status   uint8  `json:"status"`
 }

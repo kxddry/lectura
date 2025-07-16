@@ -20,3 +20,23 @@ type File interface {
 	Size() int64
 	MimeType() string
 }
+
+var AllowedMimeTypes = map[string]string{
+	"video/mp4":       ".mp4",
+	"video/quicktime": ".mov",
+	"video/x-msvideo": ".avi",
+	"audio/aac":       ".aac",
+	"audio/wav":       ".wav",
+	"audio/ogg":       ".ogg",
+	"audio/mpeg":      ".mp3",
+}
+
+var Extensions = map[string]string{
+	".mp4": "video/mp4",
+	".mov": "video/quicktime",
+	".avi": "video/x-msvideo",
+	".aac": "audio/aac",
+	".wav": "audio/wav",
+	".ogg": "audio/ogg",
+	".mp3": "audio/mpeg",
+}

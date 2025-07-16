@@ -31,17 +31,6 @@ type Uploader interface {
 	Upload(ctx context.Context, bucket string, file uploaded.File) error
 }
 
-var allowedMimeTypes = map[string]string{
-	"video/mp4":       ".mp4",
-	"video/quicktime": ".mov",
-	"video/x-msvideo": ".avi",
-	"audio/aac":       ".aac",
-	"audio/wav":       ".wav",
-	"audio/ogg":       ".ogg",
-	"audio/mpeg":      ".mpeg",
-	"audio/mp4":       ".mp3",
-}
-
 const maxFileDuration = 14400 // 4 hours
 
 func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Client, bucket, cookieName string) echo.HandlerFunc {
@@ -82,7 +71,7 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 		}
 
 		// check mimetype
-		ext, ok := allowedMimeTypes[mtype.String()]
+		ext, ok := uploaded.AllowedMimeTypes[mtype.String()]
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnsupportedMediaType, "unsupported media type", mtype.String())
 		}
