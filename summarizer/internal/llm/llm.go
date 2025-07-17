@@ -14,7 +14,7 @@ type OpenAI struct {
 	Cfg *config.Config
 }
 
-func (o OpenAI) SendMessage(msg []byte) (entities.ChatResponse, error) {
+func (o OpenAI) SendMessage(msg []byte, lang string) (entities.ChatResponse, error) {
 	if o.Cfg == nil {
 		return entities.ChatResponse{}, errors.New("config is nil")
 	}
@@ -23,6 +23,7 @@ func (o OpenAI) SendMessage(msg []byte) (entities.ChatResponse, error) {
 		Model: o.Cfg.Summarizer.Model,
 		Messages: []entities.ChatMessage{
 			{Role: "system", Content: []byte(o.Cfg.Summarizer.Prompt)},
+			{Role: "language", Content: []byte(lang)},
 			{Role: "user", Content: msg},
 		},
 		Stream: false,

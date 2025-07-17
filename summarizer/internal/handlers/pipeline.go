@@ -10,7 +10,7 @@ import (
 )
 
 type MessageSender interface {
-	SendMessage(msg []byte) (entities.ChatResponse, error)
+	SendMessage(msg []byte, lang string) (entities.ChatResponse, error)
 }
 
 func Pipeline[R transcribed.Record, W summarized.Record](
@@ -18,10 +18,11 @@ func Pipeline[R transcribed.Record, W summarized.Record](
 	const op = "handlers.Pipeline"
 
 	txt := msg.Text
+	lang := msg.Language
 
 	txtBytes := []byte(txt)
 
-	resp, err := sender.SendMessage(txtBytes)
+	resp, err := sender.SendMessage(txtBytes, lang)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
