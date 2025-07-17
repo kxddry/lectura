@@ -59,7 +59,7 @@ https://github.com/user-attachments/assets/351a7261-6248-41e3-942a-9bdbd70faab7
 | **whisper-api** | Lightweight HTTP wrapper around Whisper model  |
 | **api-gateway** | Central routing and validation entrypoint      |
 | **updater**     | Handles updates to lecture metadata            |
-| **frontend**    | Static frontend served via Nginx               |
+| **frontend**    | Vue CSR frontend               |
 | **migrator**    | Initializes and migrates the PostgreSQL schema |
 
 ---
