@@ -20,7 +20,8 @@ Lectura is a modular, container-based platform designed primarily for students t
 
 ## Video showcase
 
-https://raw.githubusercontent.com/kxddry/lectura/refs/heads/main/readme/video.mp4?token=GHSAT0AAAAAADFXLER77J6VIQJIH7TERAC62DZOOAA
+https://github.com/user-attachments/assets/351a7261-6248-41e3-942a-9bdbd70faab7
+
 
 ---
 
