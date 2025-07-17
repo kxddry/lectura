@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -151,8 +152,6 @@
             <div class="hidden md:flex items-center space-x-6">
                 <a href="#" @click="currentView = 'dashboard'" class="hover:text-purple-400 transition-colors" :class="{'text-purple-400': currentView === 'dashboard'}">Dashboard</a>
                 <a href="#" @click="currentView = 'files'" class="hover:text-purple-400 transition-colors" :class="{'text-purple-400': currentView === 'files'}">My Files</a>
-                <a href="#" class="hover:text-purple-400 transition-colors">Pricing</a>
-                <a href="#" class="hover:text-purple-400 transition-colors">Support</a>
             </div>
 
             <div class="flex items-center space-x-4">
@@ -165,7 +164,7 @@
                     <button @click="currentView = 'login'" class="px-4 py-2 rounded-md bg-gray-800 hover:bg-gray-700 transition-colors text-sm font-medium">
                         Login
                     </button>
-                    <button @click="currentView = 'register'" class="px-4 py-2 rounded-md bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 transition-colors text-sm font-medium">
+                    <button @click="goToRegister" class="px-4 py-2 rounded-md bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 transition-colors text-sm font-medium">
                         Get Started
                     </button>
                 </template>
@@ -178,7 +177,7 @@
 
     <!-- Main Content -->
     <main class="flex-grow">
-        <transition name="slide-fade" mode="out-in">
+        <transition-group name="slide-fade" mode="out-in">
             <!-- Dashboard View -->
             <div v-if="currentView === 'dashboard' && isAuthenticated" key="dashboard" class="max-w-7xl mx-auto px-6 py-12">
                 <div class="text-center mb-12">
@@ -311,38 +310,73 @@
                         </button>
                     </div>
 
-                    <div v-else class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-                        <div class="grid grid-cols-12 bg-gray-800 px-6 py-3 border-b border-gray-700 text-sm text-gray-400 font-medium">
-                            <div class="col-span-5 md:col-span-6">Name</div>
-                            <div class="col-span-3 md:col-span-2">Type</div>
-                            <div class="col-span-2 md:col-span-2">Status</div>
-                            <div class="col-span-2 text-right">Actions</div>
-                        </div>
-
-                        <div v-for="file in filteredFiles" :key="file.uuid" class="grid grid-cols-12 px-6 py-4 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
-                            <div class="col-span-5 md:col-span-6 flex items-center space-x-3">
-                                <i class="fas" :class="getFileIcon(file.mime_type)"></i>
-                                <span class="truncate">{{ file.name }}</span>
+                    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="file in filteredFiles" :key="file.uuid"
+                             class="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors group">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-700 group-hover:bg-purple-900 transition-colors flex items-center justify-center">
+                                    <i class="fas" :class="getFileIcon(file.mime_type)"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium truncate">{{ file.name }}</h3>
+                                    <div class="flex items-center space-x-2 text-xs text-gray-400">
+                                        <span>{{ getFileType(file.mime_type) }}</span>
+                                        <span>•</span>
+                                        <span class="status-badge" :class="'status-' + file.status">
+                                            {{ getStatusText(file.status) }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-span-3 md:col-span-2 flex items-center text-sm text-gray-400">
-                                {{ getFileType(file.mime_type) }}
+                            <div class="aspect-video bg-gray-800/50 backdrop-blur-sm rounded-lg flex items-center justify-center mb-2 p-4 shadow-xl">
+                                <template v-if="file.mime_type.includes('video')">
+                                    <div class="w-full h-full flex items-center justify-center relative group">
+                                        <video 
+                                            controls 
+                                            :src="file.url" 
+                                            :type="file.mime_type" 
+                                            class="w-full h-40 rounded-lg shadow-lg border border-purple-500/30 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 group-hover:border-purple-500"
+                                            style="background: rgba(109, 40, 217, 0.05);"
+                                        >
+                                            Your browser does not support the video tag.
+                                        </video>
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg pointer-events-none"></div>
+                                    </div>
+                                </template>
+                                <template v-else-if="file.mime_type.includes('audio')">
+                                    <div class="w-full flex items-center justify-center relative group">
+                                        <div class="w-full bg-gray-900/50 rounded-lg p-4 backdrop-blur-sm border border-blue-500/30 group-hover:border-blue-500 transition-all duration-300">
+                                            <div class="flex items-center space-x-4 mb-3">
+                                                <div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                                                    <i class="fas fa-music text-blue-400"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="h-1 bg-blue-900/50 rounded-full overflow-hidden">
+                                                        <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 w-0 group-hover:w-full transition-all duration-3000 ease-out"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <audio 
+                                                controls 
+                                                :src="file.url" 
+                                                :type="file.mime_type" 
+                                                class="w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            >
+                                                Your browser does not support the audio element.
+                                            </audio>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <i class="fas" :class="getFileIcon(file.mime_type) + ' text-3xl text-gray-400'" style="margin: auto;"></i>
+                                </template>
                             </div>
-                            <div class="col-span-2 md:col-span-2 flex items-center">
-                                    <span class="status-badge" :class="'status-' + file.status">
-                                        {{ getStatusText(file.status) }}
-                                    </span>
-                            </div>
-                            <div class="col-span-2 flex justify-end space-x-2">
-                                <button v-if="file.status === 2" @click="viewSummary(file)" class="w-8 h-8 rounded-full bg-gray-700 hover:bg-purple-600 transition-colors flex items-center justify-center text-sm" title="View Summary">
-                                    <i class="fas fa-file-alt"></i>
-                                </button>
-                                <a :href="file.url" target="_blank" class="w-8 h-8 rounded-full bg-gray-700 hover:bg-blue-600 transition-colors flex items-center justify-center text-sm" title="Download">
-                                    <i class="fas fa-download"></i>
-                                </a>
-                                <button @click="deleteFile(file.uuid)" class="w-8 h-8 rounded-full bg-gray-700 hover:bg-red-600 transition-colors flex items-center justify-center text-sm" title="Delete">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
+                            <button @click="openFilePreview(file)" class="w-full mt-2 px-4 py-2 rounded-md bg-gray-700 hover:bg-purple-600 transition-colors text-sm font-medium">View Details</button>
+                            <template>
+                                <div>
+                                    {{ fileContent.value }}
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -410,8 +444,38 @@
 
                         <div>
                             <label for="register-password" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
-                            <input v-model="registerForm.password" type="password" id="register-password" required class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors" placeholder="••••••••">
-                            <p class="mt-1 text-xs text-gray-500">At least 8 characters</p>
+                            <div class="relative">
+                                <input v-model="registerForm.password" :type="showPassword ? 'text' : 'password'" id="register-password" required class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors pr-10" placeholder="••••••••">
+                                <button type="button" @click="showPassword = !showPassword" class="absolute right-2 top-2 text-gray-400 hover:text-purple-400 focus:outline-none">
+                                    <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
+                            <ul class="mt-2 text-xs space-y-1.5">
+                                <li class="flex items-center space-x-2" :class="{'text-green-400': passwordRequirements.length, 'text-gray-400': !passwordRequirements.length}">
+                                    <i class="fas" :class="passwordRequirements.length ? 'fa-check-circle' : 'fa-circle'"></i>
+                                    <span>At least 8 characters</span>
+                                </li>
+                                <li class="flex items-center space-x-2" :class="{'text-green-400': passwordRequirements.number, 'text-gray-400': !passwordRequirements.number}">
+                                    <i class="fas" :class="passwordRequirements.number ? 'fa-check-circle' : 'fa-circle'"></i>
+                                    <span>At least one number</span>
+                                </li>
+                                <li class="flex items-center space-x-2" :class="{'text-green-400': passwordRequirements.uppercase, 'text-gray-400': !passwordRequirements.uppercase}">
+                                    <i class="fas" :class="passwordRequirements.uppercase ? 'fa-check-circle' : 'fa-circle'"></i>
+                                    <span>At least one uppercase letter</span>
+                                </li>
+                                <li class="flex items-center space-x-2" :class="{'text-green-400': passwordRequirements.lowercase, 'text-gray-400': !passwordRequirements.lowercase}">
+                                    <i class="fas" :class="passwordRequirements.lowercase ? 'fa-check-circle' : 'fa-circle'"></i>
+                                    <span>At least one lowercase letter</span>
+                                </li>
+                                <li class="flex items-center space-x-2" :class="{'text-green-400': passwordRequirements.special, 'text-gray-400': !passwordRequirements.special}">
+                                    <i class="fas" :class="passwordRequirements.special ? 'fa-check-circle' : 'fa-circle'"></i>
+                                    <span>At least one special symbol</span>
+                                </li>
+                            </ul>
+                            <div class="h-1 mt-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 transition-all duration-300"
+                                     :style="{ width: (Object.values(passwordRequirements).filter(Boolean).length * 20) + '%' }"></div>
+                            </div>
                         </div>
 
                         <div>
@@ -431,10 +495,115 @@
                             <span v-else>Creating Account...</span>
                             <i v-if="isRegistering" class="fas fa-circle-notch loading-spinner ml-2"></i>
                         </button>
+                        <div v-if="registrationErrors.length" class="mt-4 text-sm text-red-400">
+                            <ul>
+                                <li v-for="err in registrationErrors" :key="err">{{ err }}</li>
+                            </ul>
+                        </div>
                     </form>
 
                     <div class="mt-6 text-center text-sm text-gray-400">
                         Already have an account? <a href="#" @click="currentView = 'login'" class="text-purple-400 hover:text-purple-300">Sign in</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Preview Modal -->
+            <div v-if="showFilePreview" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 px-4 py-6" @click.self="showFilePreview = false">
+                <div class="bg-gray-900/95 backdrop-filter backdrop-blur rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-gray-800/50 shadow-2xl transform transition-all duration-300 scale-100">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800/50 bg-gray-900/50">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-500/20 flex items-center justify-center">
+                                <i :class="getFileIcon(currentPreviewFile.mime_type)" class="text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold">{{ currentPreviewFile.name }}</h3>
+                                <p class="text-sm text-gray-400">{{ getFileType(currentPreviewFile.mime_type) }} File</p>
+                            </div>
+                        </div>
+                        <button @click="showFilePreview = false" class="w-8 h-8 rounded-full bg-gray-800/50 hover:bg-gray-700 transition-colors flex items-center justify-center">
+                            <i class="fas fa-times text-gray-400"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex-grow overflow-y-auto p-6 space-y-6">
+                        <div class="aspect-video bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden relative group">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <video v-if="currentPreviewFile.mime_type.includes('video')" controls class="w-full h-full">
+                                <source :src="currentPreviewFile.url" :type="currentPreviewFile.mime_type">
+                            </video>
+                            <audio v-else-if="currentPreviewFile.mime_type.includes('audio')" controls class="w-full absolute bottom-0 left-0 right-0 p-4 bg-gray-900/80 backdrop-blur-sm">
+                                <source :src="currentPreviewFile.url" :type="currentPreviewFile.mime_type">
+                            </audio>
+                        </div>
+
+                        <div v-if="isLoadingFileContent" class="flex justify-center items-center h-32">
+                            <div class="animate-pulse flex flex-col items-center">
+                                <i class="fas fa-circle-notch loading-spinner text-3xl text-purple-400 mb-4"></i>
+                                <p class="text-gray-400">Loading content...</p>
+                            </div>
+                        </div>
+
+                        <div v-else class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-gray-800/50 rounded-lg p-4 backdrop-blur-sm border border-gray-700/50">
+                                    <h4 class="text-sm font-semibold text-gray-400 mb-3">File Information</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">Status</span>
+                                            <span class="status-badge" :class="'status-' + currentPreviewFile.status">
+                                                {{ getStatusText(currentPreviewFile.status) }}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">Type</span>
+                                            <span class="text-gray-300">{{ getFileType(currentPreviewFile.mime_type) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-800/50 rounded-lg p-4 backdrop-blur-sm border border-gray-700/50">
+                                    <h4 class="text-sm font-semibold text-gray-400 mb-3">Processing</h4>
+                                    <div class="space-y-3">
+                                        <div class="space-y-1">
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-gray-400">Progress</span>
+                                                <span class="text-purple-400">{{ (currentPreviewFile.status + 1) * 33 }}%</span>
+                                            </div>
+                                            <div class="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                                                <div class="h-full bg-gradient-to-r from-purple-600 to-pink-500" 
+                                                     :style="{ width: (1 + currentPreviewFile.status) * 33 + '%' }"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-800/50 rounded-lg p-6 backdrop-blur-sm border border-gray-700/50">
+                                <h4 class="text-lg font-semibold mb-4 text-purple-400">File Details</h4>
+                                <div class="prose prose-invert max-w-none prose-p:text-gray-300 prose-headings:text-gray-200">
+                                    <div v-html="fileContent"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4 border-t border-gray-800/50 bg-gray-900/50 flex justify-between">
+                        <button v-if="currentPreviewFile.status === 2" 
+                                @click="viewSummary(currentPreviewFile)" 
+                                class="px-4 py-2 rounded-md bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 transition-colors text-sm font-medium flex items-center space-x-2">
+                            <i class="fas fa-book-open"></i>
+                            <span>View Summary</span>
+                        </button>
+                        <div class="space-x-3">
+                            <button @click="showFilePreview = false" 
+                                    class="px-4 py-2 rounded-md bg-gray-800/80 hover:bg-gray-700 transition-colors text-sm font-medium">
+                                Close
+                            </button>
+                            <button v-if="currentPreviewFile.status === 2" 
+                                    class="px-4 py-2 rounded-md bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 transition-colors text-sm font-medium">
+                                Download
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -500,7 +669,7 @@
                     </div>
                 </div>
             </div>
-        </transition>
+        </transition-group>
     </main>
 
     <!-- Footer -->
@@ -549,21 +718,7 @@
             </div>
 
             <div class="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
-                <p class="text-gray-400 text-sm mb-4 md:mb-0">© 2023 Lectura AI. All rights reserved.</p>
-                <div class="flex space-x-6">
-                    <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors">
-                        <i class="fab fa-linkedin"></i>
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors">
-                        <i class="fab fa-github"></i>
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors">
-                        <i class="fab fa-discord"></i>
-                    </a>
-                </div>
+                <p class="text-gray-400 text-sm mb-4 md:mb-0">© 2025 Lectura AI. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -571,6 +726,7 @@
 
 <script>
     const { createApp, ref, computed, onMounted } = Vue;
+    const md = window.markdownit ? window.markdownit() : null;
 
     createApp({
         setup() {
@@ -588,6 +744,19 @@
             const showSummaryModal = ref(false);
             const currentSummaryFile = ref(null);
             const isLoadingSummary = ref(false);
+            const showFilePreview = ref(false);
+            const currentPreviewFile = ref(null);
+            const fileContent = ref('');
+            const isLoadingFileContent = ref(false);
+            const showPassword = ref(false);
+            const registrationErrors = ref([]);
+            const passwordRequirements = ref({
+                length: false,
+                number: false,
+                uppercase: false,
+                lowercase: false,
+                special: false
+            });
 
             // Form data
             const loginForm = ref({
@@ -727,26 +896,52 @@
                 }
             };
 
+            Vue.watch(() => registerForm.value.password, (newVal) => {
+                passwordRequirements.value.length = newVal.length >= 8;
+                passwordRequirements.value.number = /\d/.test(newVal);
+                passwordRequirements.value.uppercase = /[A-Z]/.test(newVal);
+                passwordRequirements.value.lowercase = /[a-z]/.test(newVal);
+                passwordRequirements.value.special = /[^A-Za-z0-9]/.test(newVal);
+            });
+
             const handleRegister = async () => {
-                if (registerForm.value.password !== registerForm.value.confirmPassword) {
-                    alert('Passwords do not match');
+                registrationErrors.value = [];
+                const password = registerForm.value.password;
+                const confirmPassword = registerForm.value.confirmPassword;
+                const errors = [];
+                if (password !== confirmPassword) {
+                    errors.push('Passwords do not match');
+                }
+                if (!passwordRequirements.value.length) {
+                    errors.push('Password must be at least 8 characters long.');
+                }
+                if (!passwordRequirements.value.number) {
+                    errors.push('Password must contain at least one number.');
+                }
+                if (!passwordRequirements.value.uppercase) {
+                    errors.push('Password must contain at least one uppercase letter.');
+                }
+                if (!passwordRequirements.value.lowercase) {
+                    errors.push('Password must contain at least one lowercase letter.');
+                }
+                if (!passwordRequirements.value.special) {
+                    errors.push('Password must contain at least one special symbol.');
+                }
+                if (errors.length > 0) {
+                    registrationErrors.value = errors;
                     return;
                 }
-
                 isRegistering.value = true;
                 try {
                     const response = await axios.postForm('/api/v1/register', {
                         email: registerForm.value.email,
                         password: registerForm.value.password
                     });
-
-                    // The backend sets the cookie
                     isAuthenticated.value = true;
                     currentView.value = 'dashboard';
                     await fetchFiles();
                 } catch (error) {
-                    alert('Registration failed. Please try again.');
-                    console.error('Registration error:', error);
+                    registrationErrors.value = ['Registration failed. Please try again.'];
                 } finally {
                     isRegistering.value = false;
                 }
@@ -821,6 +1016,23 @@
                 }, 1000);
             };
 
+            const openFilePreview = async (file) => {
+                showFilePreview.value = true;
+                currentPreviewFile.value = file;
+                isLoadingFileContent.value = true;
+                fileContent.value = '';
+                try {
+                    // Always fetch file details from backend
+                    const response = await axios.get(`/api/v1/file/${file.uuid}`);
+                    fileContent.value = md ? md.render(response.data) : response.data;
+                } catch (error) {
+                    console.error('Error fetching file content:', error);
+                    fileContent.value = 'Could not load file details';
+                } finally {
+                    isLoadingFileContent.value = false;
+                }
+            };
+
             const deleteFile = async (uuid) => {
                 if (!confirm('Are you sure you want to delete this file?')) return;
 
@@ -849,6 +1061,11 @@
                 // }, 500);
             });
 
+            // ...existing code...
+            const goToRegister = () => {
+                currentView.value = 'register';
+            };
+            // ...existing code...
             return {
                 currentView,
                 isAuthenticated,
@@ -884,7 +1101,13 @@
                 fetchFiles,
                 refreshFiles,
                 viewSummary,
-                deleteFile
+                deleteFile,
+                openFilePreview,
+                showFilePreview,
+                currentPreviewFile,
+                fileContent,
+                isLoadingFileContent,
+                goToRegister
             };
         }
     }).mount('#app');

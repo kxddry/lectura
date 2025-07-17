@@ -2,7 +2,7 @@ package entities
 
 type ChatMessage struct {
 	Role    string `json:"role"`
-	Content []byte `json:"content"`
+	Content string `json:"content"`
 }
 
 type ChatRequest struct {
@@ -20,7 +20,7 @@ type ChatChoice struct {
 type ChatResponse struct {
 	ID        string       `json:"id"`
 	Object    string       `json:"object"`
-	CreatedAt string       `json:"created"`
+	CreatedAt int64        `json:"created"`
 	Model     string       `json:"model"`
 	Choices   []ChatChoice `json:"choices"`
 }

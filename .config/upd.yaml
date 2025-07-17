@@ -1,15 +1,15 @@
 env: local
 kafka:
   brokers:
-    - kafka:9092
+    - <service/ip>:9092
   topic: file.uploaded
   group_id: upd
 
 storage:
-  host: postgres
+  host: <service/ip>
   port: 5432
-  user: "postgres"
-  password: "password"
+  user: postgres
+  password: password
   dbname: "app"
   sslmode: "disable"
 

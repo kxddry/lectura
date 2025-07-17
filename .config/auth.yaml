@@ -1,12 +1,13 @@
 env: "local" # local, dev, prod
 token_ttl: 1h
+
 postgres:
-    host: "postgres"
+    host: <ip/service>
     port: 5432
-    user: "postgres"
-    password: "password"
+    user: postgres
+    password: <password>
     dbname: "sso"
-    sslmode: "disable"
+    sslmode: <"disable" / enable>
 
 grpc:
     port: 42042

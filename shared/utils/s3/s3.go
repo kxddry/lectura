@@ -28,7 +28,6 @@ func (s3 S3Client) GetPresignedURL(ctx context.Context, bucket, objectName strin
 	parsed := *presignedURL
 	parsed.Host = s3.publicURL.Host
 	parsed.Scheme = s3.publicURL.Scheme
-	parsed.Path = "/s3" + parsed.Path
 
 	return parsed.String(), nil
 }

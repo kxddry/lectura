@@ -12,19 +12,19 @@ services:
     insecure: true
 
 storage:
-  host: postgres
+  host: <service_name_or_ip>
   port: 5432
-  user: "postgres"
-  password: "password"
+  user: <user>
+  password: <password>
   dbname: "app"
-  sslmode: "disable"
+  sslmode: <"disable" or "enable">
 
 s3storage:
-  endpoint: minio:9000
-  public_url: http://localhost
-  access_key: ROOTUSER
-  secret: CHANGEME123
-  ssl: false
+  endpoint: <service_name_or_ip>:9000
+  public_url: http://<public_ip>:9000
+  access_key: <access_key>
+  secret: <secret>
+  ssl: <false or true>
 
 rate_limit: 100
 app:

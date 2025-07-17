@@ -13,88 +13,88 @@
 # frontend
 
 services:
-  minio:
-    image: quay.io/minio/minio
-    expose:
-      - "9000:9000"
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-    volumes:
-      - ./minio/data:/data
-    command: server /data --console-address ":9001"
+#  minio:
+#    image: quay.io/minio/minio
+#    expose:
+#      - "9000:9000"
+#    environment:
+#      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+#      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+#    volumes:
+#      - ./minio/data:/data
+#    command: server /data --console-address ":9001"
 
-  postgres:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    expose:
-      - "5432:5432"
+#  postgres:
+#    image: postgres:17
+#    environment:
+#      POSTGRES_USER: ${POSTGRES_USER}
+#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#      POSTGRES_DB: postgres
+#    volumes:
+#      - pgdata:/var/lib/postgresql/data
+#    expose:
+#      - "5432:5432"
 
-  kafka:
-    image: apache/kafka:latest
-    hostname: kafka
-    container_name: kafka
-    expose:
-      - "9092:9092"
-      - "9093:9093"
-
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT #,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 #,PLAINTEXT_HOST://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_NODE_ID: 1
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 #,PLAINTEXT_HOST://0.0.0.0:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-      CLUSTER_ID: test_id
-    volumes:
-      - ./kafka/data:/var/lib/kafka/data
-    healthcheck:
-      test: [ "CMD", "bash", "-c", "echo > /dev/tcp/localhost/9092" ]
-      interval: 5s
-      timeout: 2s
-      retries: 10
-  
-  init-kafka:
-    image: apache/kafka:latest
-    depends_on:
-      kafka:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command: |
-      "
-      # blocks until kafka is reachable
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
-
-      echo -e 'Creating kafka topics'
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic file.uploaded --replication-factor 1 --partitions 1
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic asr.done --replication-factor 1 --partitions 1
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic sum.done --replication-factor 1 --partitions 1
-
-      echo -e 'Following topics available:'
-      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
-      "
+#  kafka:
+#    image: apache/kafka:latest
+#    hostname: kafka
+#    container_name: kafka
+#    expose:
+#      - "9092:9092"
+#      - "9093:9093"
+#
+#    environment:
+#      KAFKA_BROKER_ID: 1
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT #,PLAINTEXT_HOST:PLAINTEXT
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 #,PLAINTEXT_HOST://localhost:9092
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#      KAFKA_PROCESS_ROLES: broker,controller
+#      KAFKA_NODE_ID: 1
+#      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+#      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 #,PLAINTEXT_HOST://0.0.0.0:9092
+#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+#      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+#      KAFKA_LOG_DIRS: /var/lib/kafka/data
+#      CLUSTER_ID: test_id
+#    volumes:
+#      - ./kafka/data:/var/lib/kafka/data
+#    healthcheck:
+#      test: [ "CMD", "bash", "-c", "echo > /dev/tcp/localhost/9092" ]
+#      interval: 5s
+#      timeout: 2s
+#      retries: 10
+#
+#  init-kafka:
+#    image: apache/kafka:latest
+#    depends_on:
+#      kafka:
+#        condition: service_healthy
+#    entrypoint: ["/bin/sh", "-c"]
+#    command: |
+#      "
+#      # blocks until kafka is reachable
+#      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+#
+#      echo -e 'Creating kafka topics'
+#      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic file.uploaded --replication-factor 1 --partitions 1
+#      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic asr.done --replication-factor 1 --partitions 1
+#      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic sum.done --replication-factor 1 --partitions 1
+#
+#      echo -e 'Following topics available:'
+#      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+#      "
 
 
 
   uploader:
     image: ghcr.io/kxddry/lectura-uploader
     depends_on:
-      - minio
-      - init-kafka
-      - kafka
+##      - minio
+#      - init-kafka
+#      - kafka
       - auth
     expose:
       - "8090"
@@ -107,8 +107,8 @@ services:
 
   whisper-api:
     image: ghcr.io/kxddry/lectura-whisper-api
-    depends_on:
-      - minio
+#    depends_on:
+#      - minio
     environment:
       - WHISPER_MODEL=turbo
     expose:
@@ -120,9 +120,9 @@ services:
   asr:
     image: ghcr.io/kxddry/lectura-asr
     depends_on:
-      - kafka
-      - init-kafka
-      - minio
+#      - kafka
+#      - init-kafka
+#      - minio
       - whisper-api
     restart: on-failure
     environment:
@@ -135,9 +135,9 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CONFIG_PATH=/app/config.yaml
-    depends_on:
-      - kafka
-      - init-kafka
+#    depends_on:
+#      - kafka
+#      - init-kafka
     restart: unless-stopped
     volumes:
       - ./.config/sum.yaml:/app/config.yaml
@@ -171,6 +171,8 @@ services:
       - ./.keys/auth-private.pem:/private.pem
     expose:
       - "42042:42042"
+
+
   migrator:
     image: ghcr.io/kxddry/lectura-migrator
     environment:
@@ -178,8 +180,8 @@ services:
     volumes:
       - ./.config/migrations.yaml:/app/migrations.yaml
       - ./migrations/:/migrations/
-    depends_on:
-      - postgres
+#    depends_on:
+#      - postgres
 
   api-gateway:
     image: ghcr.io/kxddry/lectura-api-gateway
@@ -202,10 +204,10 @@ services:
       dockerfile: updater/Dockerfile
     environment:
       - CONFIG_PATH=/app/config.yaml
-    depends_on:
-      - postgres
-      - kafka
-      - init-kafka
+#    depends_on:
+#      - postgres
+#      - kafka
+#      - init-kafka
     restart: unless-stopped
     volumes:
       - ./.config/upd.yaml:/app/config.yaml

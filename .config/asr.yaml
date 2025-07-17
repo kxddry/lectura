@@ -1,20 +1,22 @@
 env: local
 
 whisper_api: http://whisper-api:5678
+
 s3storage:
-  endpoint: minio:9000
-  public_url: http://localhost
-  access_key: ROOTUSER
-  secret: CHANGEME123
-  ssl: false
+  endpoint: <service_name_or_ip>:9000
+  public_url: http://<public_ip>:9000
+  access_key: <access_key>
+  secret: <secret>
+  ssl: <false or true>
+
 
 kafka:
-  brokers: [kafka:9092]
+  brokers: [<service_name_or_ip>:9092]
   read:
-    brokers: [kafka:9092]
+    brokers: [<service_name_or_ip>:9092]
     topic: file.uploaded
     group_id: asr
   write:
-    brokers: [kafka:9092]
+    brokers: [<service_name_or_ip>:9092]
     topic: asr.done
     client_id: asr

@@ -1,7 +1,7 @@
 env: local
 summarizer:
-  base_url: https://api.openai.com/v1/chat/completions
-  model: gpt-4o-mini
+  base_url: <base_api_url>
+  model: <model>
   prompt: |
     You are a worker at Lectura.AI, a B2C/B2B service enhancing learning. Your purpose is to summarize the text sent by the user into a concise overview.
     You may only use complex words if it is necessary. Try to use simple language most of the time; the summarization must be easy to understand.
@@ -17,10 +17,10 @@ summarizer:
 
 kafka:
   reader:
-    brokers: [ kafka:9092 ]
+    brokers: [ <service/ip>:9092 ]
     topic: asr.done
     group_id: summarizer
   writer:
-    brokers: [ kafka:9092 ]
+    brokers: [ <service/ip>:9092 ]
     topic: sum.done
     client_id: summarizer

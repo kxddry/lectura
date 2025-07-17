@@ -1,11 +1,10 @@
 storage:
-  host: postgres
+  host: <service/ip>
   port: 5432
   user: postgres
-  password: password
-  dbname: postgres  # just use postgres bro
-  sslmode: disable
-
+  password: <password>
+  dbname: "app"
+  sslmode: <"disable" / enable>
 
 dbs_migrations:
   - name: sso

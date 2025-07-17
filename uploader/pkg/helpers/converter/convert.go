@@ -63,7 +63,7 @@ func ConvertToWav(file entities.File) (entities.File, error) {
 			fmt.Errorf("failed to stat converted wav: %w", err)
 	}
 
-	out := entities.New(withoutExt, ext, outFile, info.Size(), "audio/wav")
+	out := entities.New(withoutExt, ".wav", outFile, info.Size(), "audio/wav")
 
 	return out, nil
 }
