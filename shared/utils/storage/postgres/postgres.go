@@ -168,3 +168,39 @@ func (c *Client) ListFiles(ctx context.Context, user_id uint) ([]frontend.File, 
 	}
 	return files, nil
 }
+
+func (c *Client) GetFileData(ctx context.Context, uuid string, uid uint) (string, error) {
+	const op = "storage.postgres.getFileData"
+	tx, err := c.db.Begin()
+	if err != nil {
+		return err.Error(), fmt.Errorf("%s: %w", op, err)
+	}
+	defer tx.Rollback()
+
+	var status int
+	err = tx.QueryRowContext(ctx, `SELECT status FROM files WHERE uuid = $1 AND user_id = $2;`, uuid, uid).Scan(&status)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "This file does not exist", nil
+		}
+		return err.Error(), fmt.Errorf("%s: %w", op, err)
+	}
+
+	if status == 0 {
+		return "Your file has not been processed yet, please wait...", nil
+	} else if status == 1 {
+		var data string
+		err = tx.QueryRowContext(ctx, `SELECT text FROM transcribed WHERE uuid = $1;`, uuid).Scan(&data)
+		if err != nil {
+			return err.Error(), fmt.Errorf("%s: %w", op, err)
+		}
+		return data, nil
+	} else {
+		var data string
+		err = tx.QueryRowContext(ctx, `SELECT text FROM summarized WHERE uuid = $1;`, uuid).Scan(&data)
+		if err != nil {
+			return err.Error(), fmt.Errorf("%s: %w", op, err)
+		}
+		return data, nil
+	}
+}

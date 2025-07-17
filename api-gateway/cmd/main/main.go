@@ -104,6 +104,7 @@ func main() {
 		}
 		return c.NoContent(http.StatusUnauthorized)
 	})
+	e.GET("/api/v1/file/:uuid", handlers.FileInfo(ctx, log, sql))
 
 	e.POST("/api/v1/logout", func(c echo.Context) error {
 		c.SetCookie(&http.Cookie{
