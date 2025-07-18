@@ -20,7 +20,11 @@ Lectura is a modular, container-based platform designed primarily for students t
 
 ## Video showcase
 
-https://raw.githubusercontent.com/kxddry/lectura/refs/heads/main/readme/video.mp4?token=GHSAT0AAAAAADFXLER77J6VIQJIH7TERAC62DZOOAA
+
+https://github.com/user-attachments/assets/5ab2c419-44b1-4294-b245-15b0466462b5
+
+
+
 
 ---
 
@@ -31,112 +35,9 @@ https://raw.githubusercontent.com/kxddry/lectura/refs/heads/main/readme/video.mp
 
 ---
 
-## Technologies Used
-
-| Component   | Stack                 |
-| ----------- | --------------------- |
-| API Gateway | Go                    |
-| Uploader    | Go                    |
-| ASR         | Python + Whisper      |
-| Summarizer  | Python + OpenAI API   |
-| Auth        | Go + JWT              |
-| Kafka       | Apache Kafka          |
-| Storage     | MinIO (S3-compatible) |
-| Database    | PostgreSQL            |
-| Frontend    | Vue.js + Nginx        |
-
----
-
-## Services Overview
-
-| Service         | Description                                    |
-| --------------- | ---------------------------------------------- |
-| **auth**        | Authentication and token generation            |
-| **uploader**    | Receives file uploads and publishes to Kafka   |
-| **asr**         | Converts speech to text using Whisper          |
-| **summarizer**  | Generates summaries from transcriptions        |
-| **whisper-api** | Lightweight HTTP wrapper around Whisper model  |
-| **api-gateway** | Central routing and validation entrypoint      |
-| **updater**     | Handles updates to lecture metadata            |
-| **frontend**    | Static frontend served via Nginx               |
-| **migrator**    | Initializes and migrates the PostgreSQL schema |
-
----
-
-## Deployment
-
-### Prerequisites
-
-Make sure the following external services are available **if not using containers**:
-
-- Kafka
-- PostgreSQL
-- MinIO
-
-Adjust `.env` or config files accordingly to point services to the right external endpoints.
-
-### Run with Docker Compose
-
-```bash
-docker-compose up --build
-```
-
-> Note: Some services like Kafka, MinIO, and PostgreSQL are **commented out** in the `docker-compose.yml` file. Uncomment them if you want a fully local setup.
-
----
-
-## Authentication
-
-Lectura uses **JWT-based authentication, based on one of my other microservices**. View **[sso-auth](https://github.com/kxddry/sso-auth)** for more information. Keys (ed25519) must be present in the `.keys/` directory:
-
-```
-.keys/
-├── auth-private.pem
-├── auth-public.pem
-├── uploader-private.pem
-├── uploader-public.pem
-├── api-gateway-private.pem
-├── api-gateway-public.pem
-```
-
-Each service verifies requests using the appropriate public key.
-
----
-
-## Configuration Files
-
-All services use mounted config files under `.config/`. Examples:
-
-```
-.config/
-├── upload.yaml
-├── asr.yaml
-├── sum.yaml
-├── api.yaml
-├── auth.yaml
-├── migrations.yaml
-├── upd.yaml
-```
-
-You can modify service behavior, connection strings, Kafka topics, etc., in these YAML configs.
-
----
-
-## Kafka Topics
-
-Topics are managed by the `init-kafka` service (optional, used in local setup):
-
-| Topic Name    | Description            |
-| ------------- | ---------------------- |
-| file.uploaded | Published after upload |
-| asr.done      | ASR result ready       |
-| sum.done      | Summarization complete |
-
----
-
 ## Flow Overview
 
-1. User uploads a lecture file via frontend
+1. User uploads a video file via frontend
 2. `uploader` creates presigned URL and sends to frontend
 3. Browser uploads the file to MinIO (S3)
 4. `uploader` publishes file metadata to Kafka (`file.uploaded`)
@@ -147,33 +48,8 @@ Topics are managed by the `init-kafka` service (optional, used in local setup):
 
 ---
 
-## Demo Video
+Note: the source code is closed. This repository was made to showcase the product.
 
-
-
-> Click the image above to watch a demonstration of Lectura in action.
-
----
-
-## To-Do
-
-- 
-
----
-
-## License
-
-GNU GPL license. See [LICENSE](./LICENSE).
-
----
-
-## Contributing
-
-Pull requests are welcome! Please open an issue first to discuss major changes.
-
----
-
-## Contact
 
 Made with️ love by [@kxddry](https://github.com/kxddry)
 
