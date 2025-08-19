@@ -55,12 +55,17 @@ func UploadHandler(ctx context.Context, log *slog.Logger, w KafkaWriter, cli Cli
 		}
 
 		file, err := fileHeader.Open()
-		defer file.Close()
 		// failed to open file
 		if err != nil {
 			log.Error(err.Error())
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to open file", err)
 		}
+
+		defer func() {
+			if err := file.Close(); err != nil {
+				log.Error("failed to close file", sl.Err(err))
+			}
+		}()
 
 		mtype, err := mimetype.DetectReader(file)
 
